@@ -10,6 +10,19 @@ export const UnitName = {
   Industry: "Industry"
 }
 
+export const Technologies = {
+  AirDefenseRadar: "Air Defense Radar",
+  HeavyBombers: "Heavy Bombers",
+  PrecisionBombsight: "Precision Bombsight", 
+  Jets: "Jets",
+  NavalRadar: "Naval Radar",
+  Sonar: "Sonar",
+  HeavyTanks: "Heavy Tanks",
+  RocketArtillery: "Rocket Artillery",
+  MotorizedInfantry: "Motorized Infantry",
+  LST: "LST"
+}
+
 export const UnitClassType = {
   G: 'G',
   A: 'A',
@@ -62,22 +75,24 @@ export type UnitTypeInfo = {
   I: number,
   takesDouble: boolean,
   special: boolean,
-  preferredOrder: UnitClass[]
+  preferredOrder: UnitClass[],
+  canFirstFire: boolean
 }
 
 var LOG = true;
 const unitData = [
-  ["name", "priority", "class", "move", UnitClassType.A, UnitClassType.N, UnitClassType.G, UnitClassType.S, UnitClassType.I, "takesDouble", "special"],
-  [UnitName.Fortress, 1, UnitClassType.G, 0, 2, 3, 4, 3, 0, false, false],
-  [UnitName.AirForce, 2, UnitClassType.A, "2R", 3, 1, 1, 1, 1, false, false],
-  [UnitName.Carrier, 3, UnitClassType.N, "3R", 2, 2, 1, 2, 0, true, false], // Carrier requires the special condition on attack and escape at A1, not yet there
-  [UnitName.Sub, 4, UnitClassType.S, "2R", 0, 1, 0, 1, 0, false, false],
-  [UnitName.Fleet, 5, UnitClassType.N, "3R", 1, 3, 1, 2, 0, false, false],
-  [UnitName.Tank, 6, UnitClassType.G, 3, 0, 0, 2, 0, 0, false, false],
-  [UnitName.Infantry, 7, UnitClassType.G, 2, 1, 1, 3, 0, 0, false, false],
-  [UnitName.Convoy, 8, UnitClassType.N, 2, 0, 0, 0, 0, 0, true, false],
-  [UnitName.Industry, 9, UnitClassType.I, 0, 0, 0, 0, 0, 0, false, true],
+  ["name", "priority", "class", "move", UnitClassType.A, UnitClassType.N, UnitClassType.G, UnitClassType.S, UnitClassType.I, "takesDouble", "special", "canFirstFire"],
+  [UnitName.Fortress, 1, UnitClassType.G, 0, 2, 3, 4, 3, 0, false, false, false],
+  [UnitName.AirForce, 2, UnitClassType.A, "2R", 3, 1, 1, 1, 1, false, false, true],
+  [UnitName.Carrier, 3, UnitClassType.N, "3R", 2, 2, 1, 2, 0, true, false, false], // Carrier requires the special condition on attack and escape at A1, not yet there
+  [UnitName.Sub, 4, UnitClassType.S, "2R", 0, 1, 0, 1, 0, false, false, false],
+  [UnitName.Fleet, 5, UnitClassType.N, "3R", 1, 3, 1, 2, 0, false, false, true],
+  [UnitName.Tank, 6, UnitClassType.G, 3, 0, 0, 2, 0, 0, false, false, true],
+  [UnitName.Infantry, 7, UnitClassType.G, 2, 1, 1, 3, 0, 0, false, false, true],
+  [UnitName.Convoy, 8, UnitClassType.N, 2, 0, 0, 0, 0, 0, true, false, false],
+  [UnitName.Industry, 9, UnitClassType.I, 0, 0, 0, 0, 0, 0, false, true, false],
 ];
+
 
 //@ts-ignore
 const header: string = unitData.shift();

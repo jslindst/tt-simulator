@@ -2,6 +2,21 @@ import Grid from "@mui/material/Grid"; // Grid version 1
 import ListSubheader from "@mui/material/ListSubheader";
 import List from "@mui/material/List";
 
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Slide from '@mui/material/Slide';
+import { TransitionProps } from '@mui/material/transitions';
+
+import AppBar from "@mui/material/AppBar";
+import Box from "@mui/material/Box";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import AddIcon from '@mui/icons-material/Add';
+
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Container from "@mui/material/Container";
@@ -71,10 +86,7 @@ const initialDefender = {
     UnitClassType.S,
     UnitClassType.I,
   ],
-  forces: [
-    ...force("Infantry", 4),
-    ...force("Tank", 4),
-  ],
+  forces: [...force("Infantry", 4), ...force("Tank", 4)],
   nation: Nations[2],
 };
 
@@ -105,7 +117,8 @@ const VisualizeForce = ({
   }
   return attacker?.forces?.map((item, index) => {
     return (
-      <BlockSvg key={index}
+      <BlockSvg
+        key={index}
         nation={attacker.nation}
         block={item}
         onClick={(e) => {
@@ -215,32 +228,49 @@ const ForcePanel = ({ attacker, onUpdate }) => {
         component="nav"
         aria-labelledby="nested-list-subheader"
       >
-        <ListSubheader component="div">
-          {forceA.name} (CV {CV}
-          {IND > 0 ? `, IND ${IND}` : ""}){" "}
+        <ListItem disablePadding>
+          <ListItemText>
+            {forceA.name} (CV {CV} {IND > 0 ? `, IND ${IND}` : ""})
+          </ListItemText>
           <FormControl size="small">
-            <Select value="" onChange={(e) => changeNation(e.target.value)}>
+            <Select
+              value={Nations.indexOf(forceA.nation)}
+              onChange={(e) => changeNation(e.target.value)}
+            >
               {Nations.map((nation, index) => {
-                return <MenuItem key={index} value={index}>{nation.name}</MenuItem>;
+                return (
+                  <MenuItem key={index} value={index}>
+                    {nation.name}
+                  </MenuItem>
+                );
               })}
             </Select>
           </FormControl>
-        </ListSubheader>
+        </ListItem>
         <ListItem disablePadding>
-          <VisualizeForce key="force"
+          <VisualizeForce
+            key="force"
             attacker={forceA}
             removeBlock={removeBlock}
             modifyBlock={modifyBlock}
           />
           <ListItemText>
             <FormControl size="small">
-              <Select id="addBlock" value="" onChange={(e) => addBlock(e.target.value)}>
+              <Select
+                id="addBlock"
+                value=""
+                variant="filled"
+                
+                IconComponent={AddIcon}
+                onChange={(e) => addBlock(e.target.value)}
+              >
                 {unitTable
                   .filter((unit) => unit.special === false || IND === 0)
                   .map((unit, index) => {
                     return (
                       <MenuItem key={unit.name} value={unit.name}>
-                        <BlockSvg key={`index${unit.name}`}
+                        <BlockSvg
+                          key={`index${unit.name}`}
                           nation={forceA.nation}
                           block={{
                             name: unit.name,
@@ -254,22 +284,32 @@ const ForcePanel = ({ attacker, onUpdate }) => {
             </FormControl>
           </ListItemText>
         </ListItem>
-        <ListSubheader component="div">
-          Units with FirstFire{" "}
+        <ListItem disablePadding>
+          <ListItemText primary="Units with FirstFire" />
           <FormControl size="small">
-            <Select id="addFirstFire" value="" onChange={(e) => addFirstFire(e.target.value)}>
+            <Select
+              id="addFirstFire"
+              value=""
+              IconComponent={AddIcon}
+              onChange={(e) => addFirstFire(e.target.value)}
+            >
               {unitTable
                 .filter(
                   (unit) =>
                     forceA.FirstFire === undefined ||
                     forceA.FirstFire?.indexOf(unit.name) === -1
                 )
+                .filter((unit) => unitLookup[unit.name].canFirstFire)
                 .map((unit) => {
-                  return <MenuItem key={unit.name} value={unit.name}>{unit.name}</MenuItem>;
+                  return (
+                    <MenuItem key={unit.name} value={unit.name}>
+                      {unit.name}
+                    </MenuItem>
+                  );
                 })}
             </Select>
           </FormControl>
-        </ListSubheader>
+        </ListItem>
         <ListItem>
           <ListItemText>
             {forceA.FirstFire?.map((val, index) => {
@@ -277,11 +317,10 @@ const ForcePanel = ({ attacker, onUpdate }) => {
             })}
           </ListItemText>
         </ListItem>
-        <ListSubheader component="div" id="nested-list-subheader">
-          Target class priority
-        </ListSubheader>
-        <ListItem>
-          <AttackOrderList key="order"
+        <ListItem disablePadding>
+          <ListItemText>Target Class priority</ListItemText>
+          <AttackOrderList
+            key="order"
             items={forceA.attackOrder}
             onOrderChanged={(items) => updateAttackOrder(items)}
           />
@@ -302,6 +341,66 @@ export const groupByReduceFunction = (data, lambda) => {
     return group;
   }, {});
 };
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+
+function HelpDialogSlide() {
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  return (
+    <div>
+      <Button color="inherit"  onClick={handleClickOpen}>Help</Button>
+      <Dialog
+        open={open}
+        TransitionComponent={Transition}
+        keepMounted
+        onClose={handleClose}
+      >
+        <DialogTitle>{"Tragedy & Triumph Combat Simulator"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-slide-description">
+            <p>This is a combat simulator for the <a href="https://www.gmtgames.com/p-722-triumph-and-tragedy-3rd-printing.aspx">Tragedy &amp; Triumph</a> board game by Craig Besinque published by GMT Games LLC.</p>
+            
+            <p>Here you can simulate the battles over one or more combat rounds for two opposing forces.</p>
+
+            <p><b>BattleForce</b> - <b>Click</b> add pip, <b>Shift+Click</b> remove pip, <b>Right Click</b> remove block</p>
+
+            <p><b>Target Class Priority</b> - This defines the unit classes of the opposing force that are targeted when units are firing. <b>MAX</b> aims to always target the class that has the highest chance of success. 
+            <b>Units will skip priorities which they cannot hit.</b> (ie. Tanks will not try to fire at Air Force even when A is the left most (highest) priority. <b>IND</b> is industry, Air Force is assumed to have <b>Precision Bombsight</b> tech.</p>
+
+            <p><b>Combat Rounds</b> - You can add several combat rounds to the simulation, including defining which side initiates the attack (by clicking and switching the arrow). For the first round also DoW and SeaInvasion can be simulated.</p>
+
+            <p><b>Known issues</b>
+            <ul>
+              <li>Retreats: Not currently simulated. Thus also the carrier evade is not simulated.</li>
+              <li>Target Class Priority: Convoys are not separately targetable.</li>
+              <li>Target Class Priority: MAX targets the opposing unit class with highest chance of hitting, not damaging - ie. double hits are not considered</li>
+              <li>Battlegroups: Currently only one battlegroup is possible on each side, so reinforcements or multiple battlegroups joining are not simulated.</li>
+            </ul> 
+            </p>
+            <p>This simulator was written by kijoe. Please post bugs, feedback, comments, suggestions in the <a href="https://boardgamegeek.com/thread/2931896/combat-simulator-tragedy-triumph">BGG Forums here</a>. </p>
+            
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+
 
 function App() {
   const [combatRounds, setCombatRounds] = React.useState([
@@ -391,6 +490,16 @@ function App() {
 
   return (
     <div className="App">
+      <Box sx={{ flexGrow: 1 }}>
+        <AppBar position="static">
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              Tragedy &amp; Triumph Combat Simulator v1.0
+            </Typography>
+            <HelpDialogSlide />
+          </Toolbar>
+        </AppBar>
+      </Box>
       <List>
         <ListItem>
           <Grid container spacing={0}>
@@ -402,21 +511,22 @@ function App() {
             </Grid>
           </Grid>
         </ListItem>
+        <Divider />
         <ListItem>
           <Container>
             <List
               md={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
               component="nav"
               aria-labelledby="nested-list-subheader"
-              subheader={
-                <ListSubheader component="div" id="nested-list-subheader">
-                  Combat Rounds in simulation ({combatRounds.length})
+            >
+              <ListItem disablePadding >
+                <ListItemText>                
+                  <b>Combat Rounds in simulation ({combatRounds.length})</b>
                   <IconButton onClick={() => addCombatRound()}>
                     <AddCircleIcon size="small" />
                   </IconButton>
-                </ListSubheader>
-              }
-            >
+                </ListItemText>
+              </ListItem>
               {combatRounds.map((round, index) => {
                 return (
                   <ListItem key={index} disablePadding>
