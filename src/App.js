@@ -1,20 +1,19 @@
 import Grid from "@mui/material/Grid"; // Grid version 1
-import ListSubheader from "@mui/material/ListSubheader";
 import List from "@mui/material/List";
 
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import Slide from '@mui/material/Slide';
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import Slide from "@mui/material/Slide";
 
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import AddIcon from '@mui/icons-material/Add';
+import AddIcon from "@mui/icons-material/Add";
 
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
@@ -46,7 +45,6 @@ import {
   unitTable,
   unitLookup,
   UnitClassType,
-  UnitName,
 } from "./model/battle.ts";
 import React from "react";
 import Plot from "react-plotly.js";
@@ -112,14 +110,21 @@ const VisualizeForce = ({
   canModify = true,
 }) => {
   if (attacker?.forces === undefined || attacker.forces.length === 0) {
-    return <BlockSvg key={0} nation={attacker.nation} />;
-  }
-  return attacker?.forces?.map((item, index) => {
     return (
       <BlockSvg
-        key={index}
+        id={`${attacker.nation.name}-defeated`}
+        key={0}
         nation={attacker.nation}
-        block={item}
+      />
+    );
+  }
+  return attacker?.forces?.map((unit, index) => {
+    return (
+      <BlockSvg
+        id={`${attacker.nation.name}-${unit.name}-${unit.strength}`}
+        key={`${index}-${attacker.nation.name}-${unit.name}-${unit.strength}`}
+        nation={attacker.nation}
+        block={unit}
         onClick={(e) => {
           if (!canModify) return;
           if (e.shiftKey) modifyBlock(index, -1);
@@ -221,111 +226,111 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     .reduce((total, item) => total + item.strength, 0);
 
   return (
-    <Container>
-      <List
-        sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
-        component="nav"
-        aria-labelledby="nested-list-subheader"
-      >
-        <ListItem disablePadding>
-          <ListItemText>
-            {forceA.name} (CV {CV} {IND > 0 ? `, IND ${IND}` : ""})
-          </ListItemText>
+    <List
+      sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
+      component="nav"
+      aria-labelledby="nested-list-subheader"
+    >
+      <ListItem disablePadding>
+        <ListItemText>
+          {forceA.name} (CV {CV} {IND > 0 ? `, IND ${IND}` : ""})
+        </ListItemText>
+        <FormControl size="small">
+          <Select
+            value={Nations.map((nation) => nation.name).indexOf(
+              forceA.nation?.name
+            )}
+            onChange={(e) => changeNation(e.target.value)}
+          >
+            {Nations.map((nation, index) => {
+              return (
+                <MenuItem key={index} value={index}>
+                  {nation.name}
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </FormControl>
+      </ListItem>
+      <ListItem disablePadding>
+        <VisualizeForce
+          key="force"
+          attacker={forceA}
+          removeBlock={removeBlock}
+          modifyBlock={modifyBlock}
+        />
+        <ListItemText>
           <FormControl size="small">
             <Select
-              value={Nations.map(nation => nation.name).indexOf(forceA.nation?.name)}
-              onChange={(e) => changeNation(e.target.value)}
-            >
-              {Nations.map((nation, index) => {
-                return (
-                  <MenuItem key={index} value={index}>
-                    {nation.name}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
-        </ListItem>
-        <ListItem disablePadding>
-          <VisualizeForce
-            key="force"
-            attacker={forceA}
-            removeBlock={removeBlock}
-            modifyBlock={modifyBlock}
-          />
-          <ListItemText>
-            <FormControl size="small">
-              <Select
-                id="addBlock"
-                value=""
-                variant="filled"
-                
-                IconComponent={AddIcon}
-                onChange={(e) => addBlock(e.target.value)}
-              >
-                {unitTable
-                  .filter((unit) => unit.special === false || IND === 0)
-                  .map((unit, index) => {
-                    return (
-                      <MenuItem key={unit.name} value={unit.name}>
-                        <BlockSvg
-                          key={`index${unit.name}`}
-                          nation={forceA.nation}
-                          block={{
-                            name: unit.name,
-                            strength: unit.special ? 10 : forceA.nation.maxPips,
-                          }}
-                        />
-                      </MenuItem>
-                    );
-                  })}
-              </Select>
-            </FormControl>
-          </ListItemText>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemText primary="Units with FirstFire" />
-          <FormControl size="small">
-            <Select
-              id="addFirstFire"
+              id="addBlock"
               value=""
+              variant="filled"
               IconComponent={AddIcon}
-              onChange={(e) => addFirstFire(e.target.value)}
+              onChange={(e) => addBlock(e.target.value)}
             >
               {unitTable
-                .filter(
-                  (unit) =>
-                    forceA.FirstFire === undefined ||
-                    forceA.FirstFire?.indexOf(unit.name) === -1
-                )
-                .filter((unit) => unitLookup[unit.name].canFirstFire)
-                .map((unit) => {
+                .filter((unit) => unit.special === false || IND === 0)
+                .map((unit, index) => {
                   return (
                     <MenuItem key={unit.name} value={unit.name}>
-                      {unit.name}
+                      <BlockSvg
+                        id={`${forceA.nation.name}-${unit.name}-${forceA.nation.maxPips}`}
+                        key={`index${unit.name}`}
+                        nation={forceA.nation}
+                        block={{
+                          name: unit.name,
+                          strength: unit.special ? 10 : forceA.nation.maxPips,
+                        }}
+                      />
                     </MenuItem>
                   );
                 })}
             </Select>
           </FormControl>
-        </ListItem>
-        <ListItem>
-          <ListItemText>
-            {forceA.FirstFire?.map((val, index) => {
-              return <Chip label={val} onClick={() => removeFirstFire(val)} />;
-            })}
-          </ListItemText>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemText>Target Class priority</ListItemText>
-          <AttackOrderList
-            key="order"
-            items={forceA.attackOrder}
-            onOrderChanged={(items) => updateAttackOrder(items)}
-          />
-        </ListItem>
-      </List>
-    </Container>
+        </ListItemText>
+      </ListItem>
+      <ListItem disablePadding>
+        <ListItemText primary="Units with FirstFire" />
+        <FormControl size="small">
+          <Select
+            id="addFirstFire"
+            value=""
+            IconComponent={AddIcon}
+            onChange={(e) => addFirstFire(e.target.value)}
+          >
+            {unitTable
+              .filter(
+                (unit) =>
+                  forceA.FirstFire === undefined ||
+                  forceA.FirstFire?.indexOf(unit.name) === -1
+              )
+              .filter((unit) => unitLookup[unit.name].canFirstFire)
+              .map((unit) => {
+                return (
+                  <MenuItem key={unit.name} value={unit.name}>
+                    {unit.name}
+                  </MenuItem>
+                );
+              })}
+          </Select>
+        </FormControl>
+      </ListItem>
+      <ListItem>
+        <ListItemText>
+          {forceA.FirstFire?.map((val, index) => {
+            return <Chip label={val} onClick={() => removeFirstFire(val)} />;
+          })}
+        </ListItemText>
+      </ListItem>
+      <ListItem disablePadding>
+        <ListItemText>Target Class priority</ListItemText>
+        <AttackOrderList
+          key="order"
+          items={forceA.attackOrder}
+          onOrderChanged={(items) => updateAttackOrder(items)}
+        />
+      </ListItem>
+    </List>
   );
 };
 
@@ -358,7 +363,9 @@ function HelpDialogSlide() {
 
   return (
     <div>
-      <Button color="inherit"  onClick={handleClickOpen}>Help</Button>
+      <Button color="inherit" onClick={handleClickOpen}>
+        Help
+      </Button>
       <Dialog
         open={open}
         TransitionComponent={Transition}
@@ -367,29 +374,74 @@ function HelpDialogSlide() {
       >
         <DialogTitle>{"Tragedy & Triumph Combat Simulator"}</DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-slide-description">
-            <p>This is a combat simulator for the <a href="https://www.gmtgames.com/p-722-triumph-and-tragedy-3rd-printing.aspx">Tragedy &amp; Triumph</a> board game by Craig Besinque published by GMT Games LLC.</p>
-            
-            <p>Here you can simulate the battles over one or more combat rounds for two opposing forces.</p>
+          <p>
+            This is a combat simulator for the{" "}
+            <a href="https://www.gmtgames.com/p-722-triumph-and-tragedy-3rd-printing.aspx">
+              Tragedy &amp; Triumph
+            </a>{" "}
+            board game by Craig Besinque published by GMT Games LLC.
+          </p>
 
-            <p><b>BattleForce</b> - <b>Click</b> add pip, <b>Shift+Click</b> remove pip, <b>Right Click</b> remove block</p>
+          <p>
+            Here you can simulate the battles over one or more combat rounds for
+            two opposing forces.
+          </p>
 
-            <p><b>Target Class Priority</b> - This defines the unit classes of the opposing force that are targeted when units are firing. <b>MAX</b> aims to always target the class that has the highest chance of success. 
-            <b>Units will skip priorities which they cannot hit.</b> (ie. Tanks will not try to fire at Air Force even when A is the left most (highest) priority. <b>IND</b> is industry, Air Force is assumed to have <b>Precision Bombsight</b> tech.</p>
+          <p>
+            <b>BattleForce</b> - <b>Click</b> add pip, <b>Shift+Click</b> remove
+            pip, <b>Right Click</b> remove block
+          </p>
 
-            <p><b>Combat Rounds</b> - You can add several combat rounds to the simulation, including defining which side initiates the attack (by clicking and switching the arrow). For the first round also DoW and SeaInvasion can be simulated.</p>
+          <p>
+            <b>Target Class Priority</b> - This defines the unit classes of the
+            opposing force that are targeted when units are firing. <b>MAX</b>{" "}
+            aims to always target the class that has the highest chance of
+            success.
+            <b>Units will skip priorities which they cannot hit.</b> (ie. Tanks
+            will not try to fire at Air Force even when A is the left most
+            (highest) priority. <b>IND</b> is industry, Air Force is assumed to
+            have <b>Precision Bombsight</b> tech.
+          </p>
 
-            <p><b>Known issues</b>
-            <ul>
-              <li>Retreats: Not currently simulated. Thus also the carrier evade is not simulated.</li>
-              <li>Target Class Priority: Convoys are not separately targetable.</li>
-              <li>Target Class Priority: MAX targets the opposing unit class with highest chance of hitting, not damaging - ie. double hits are not considered</li>
-              <li>Battlegroups: Currently only one battlegroup is possible on each side, so reinforcements or multiple battlegroups joining are not simulated.</li>
-            </ul> 
-            </p>
-            <p>This simulator was written by kijoe. Please post bugs, feedback, comments, suggestions in the <a href="https://boardgamegeek.com/thread/2931896/combat-simulator-tragedy-triumph">BGG Forums here</a>. </p>
-            
-          </DialogContentText>
+          <p>
+            <b>Combat Rounds</b> - You can add several combat rounds to the
+            simulation, including defining which side initiates the attack (by
+            clicking and switching the arrow). For the first round also DoW and
+            SeaInvasion can be simulated.
+          </p>
+
+          <p>
+            <b>Known issues</b>
+          </p>
+
+          <ul>
+            <li>
+              Retreats: Not currently simulated. Thus also the carrier evade is
+              not simulated.
+            </li>
+            <li>
+              Target Class Priority: Convoys are not separately targetable.
+            </li>
+            <li>
+              Target Class Priority: MAX targets the opposing unit class with
+              highest chance of hitting, not damaging - ie. double hits are not
+              considered
+            </li>
+            <li>
+              Battlegroups: Currently only one battlegroup is possible on each
+              side, so reinforcements or multiple battlegroups joining are not
+              simulated.
+            </li>
+          </ul>
+
+          <p>
+            This simulator was written by kijoe. Please post bugs, feedback,
+            comments, suggestions in the{" "}
+            <a href="https://boardgamegeek.com/thread/2931896/combat-simulator-tragedy-triumph">
+              BGG Forums here
+            </a>
+            .{" "}
+          </p>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Close</Button>
@@ -398,8 +450,6 @@ function HelpDialogSlide() {
     </div>
   );
 }
-
-
 
 function App() {
   const [combatRounds, setCombatRounds] = React.useState([
@@ -512,97 +562,94 @@ function App() {
         </ListItem>
         <Divider />
         <ListItem>
-          <Container>
-            <List
-              md={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
-              component="nav"
-              aria-labelledby="nested-list-subheader"
-            >
-              <ListItem disablePadding >
-                <ListItemText>                
-                  <b>Combat Rounds in simulation ({combatRounds.length})</b>
-                  <IconButton onClick={() => addCombatRound()}>
-                    <AddCircleIcon size="small" />
-                  </IconButton>
-                </ListItemText>
-              </ListItem>
-              {combatRounds.map((round, index) => {
-                return (
-                  <ListItem key={index} disablePadding>
-                    <ListItemButton
-                      onClick={() =>
-                        setCombatRoundAttacker(
-                          index,
-                          round.attacker === "A" ? "B" : "A"
-                        )
-                      }
+          <List
+            md={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
+            component="nav"
+            aria-labelledby="nested-list-subheader"
+          >
+            <ListItem disablePadding>
+              <ListItemText>
+                <b>Combat Rounds in simulation ({combatRounds.length})</b>
+                <IconButton onClick={() => addCombatRound()}>
+                  <AddCircleIcon size="small" />
+                </IconButton>
+              </ListItemText>
+            </ListItem>
+            {combatRounds.map((round, index) => {
+              return (
+                <ListItem key={index} disablePadding>
+                  <ListItemButton
+                    onClick={() =>
+                      setCombatRoundAttacker(
+                        index,
+                        round.attacker === "A" ? "B" : "A"
+                      )
+                    }
+                  >
+                    <Grid
+                      component="label"
+                      container
+                      alignItems="center"
+                      spacing={1}
                     >
-                      <Grid
-                        component="label"
-                        container
-                        alignItems="center"
-                        spacing={1}
-                      >
-                        <Grid item>{battleforceA.name}</Grid>
-                        <Grid item>
-                          {round.attacker === "A" ? <EastIcon /> : <WestIcon />}
-                        </Grid>
-                        <Grid item>{battleforceB.name}</Grid>
+                      <Grid item>{battleforceA.name}</Grid>
+                      <Grid item>
+                        {round.attacker === "A" ? <EastIcon /> : <WestIcon />}
                       </Grid>
-                    </ListItemButton>
-                    <ListItemText>
-                      <FormGroup>
-                        <FormControlLabel
-                          disabled={index !== 0}
-                          control={
-                            <Checkbox
-                              disabled={index !== 0}
-                              label="test"
-                              checked={round.hasDoWFirstFire}
-                              onChange={() => setDoW(!round.hasDoWFirstFire)}
-                            />
-                          }
-                          label="DoW?"
-                        />
-                      </FormGroup>
-                    </ListItemText>
-                    <ListItemText>
-                      <FormGroup>
-                        <FormControlLabel
-                          disabled={index !== 0}
-                          control={
-                            <Checkbox
-                              disabled={index !== 0}
-                              label="test"
-                              checked={round.seaInvasion}
-                              onChange={() =>
-                                setSeaInvasion(index, !round.seaInvasion)
-                              }
-                            />
-                          }
-                          label="SeaInvasion?"
-                        />
-                      </FormGroup>
-                    </ListItemText>
-                    <ListItemText>
-                      <IconButton
-                        edge="end"
-                        aria-label="comments"
-                        onClick={() => removeCombatRound(index)}
-                      >
-                        <HighlightOffIcon />
-                      </IconButton>
-                    </ListItemText>
-                  </ListItem>
-                );
-              })}
-            </List>
-          </Container>
+                      <Grid item>{battleforceB.name}</Grid>
+                    </Grid>
+                  </ListItemButton>
+                  <ListItemText>
+                    <FormGroup>
+                      <FormControlLabel
+                        disabled={index !== 0}
+                        control={
+                          <Checkbox
+                            disabled={index !== 0}
+                            label="test"
+                            checked={round.hasDoWFirstFire}
+                            onChange={() => setDoW(!round.hasDoWFirstFire)}
+                          />
+                        }
+                        label="DoW?"
+                      />
+                    </FormGroup>
+                  </ListItemText>
+                  <ListItemText>
+                    <FormGroup>
+                      <FormControlLabel
+                        disabled={index !== 0}
+                        control={
+                          <Checkbox
+                            disabled={index !== 0}
+                            label="test"
+                            checked={round.seaInvasion}
+                            onChange={() =>
+                              setSeaInvasion(index, !round.seaInvasion)
+                            }
+                          />
+                        }
+                        label="SeaInvasion?"
+                      />
+                    </FormGroup>
+                  </ListItemText>
+                  <ListItemText>
+                    <IconButton
+                      edge="end"
+                      aria-label="comments"
+                      onClick={() => removeCombatRound(index)}
+                    >
+                      <HighlightOffIcon />
+                    </IconButton>
+                  </ListItemText>
+                </ListItem>
+              );
+            })}
+          </List>
         </ListItem>
         <Divider />
-        <ListSubheader>Simulation results (most likely outcome)</ListSubheader>
+        <ListItem>Simulation results (most likely outcome)</ListItem>
         <ListItem>
-          {" "}
           <Grid container>
             <Grid item xs={6}>
               <VisualizeForce attacker={Aexample} canModify={false} />
