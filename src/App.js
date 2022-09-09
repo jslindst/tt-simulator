@@ -85,13 +85,13 @@ const initialDefender = {
     UnitClassType.S,
     UnitClassType.I,
   ],
-  forces: [...force("Infantry", 4), ...force("Tank", 4)],
+  forces: [...force("Infantry", 4), ...force("Infantry", 4)],
   nation: Nations[2],
 };
 
 const initialAttacker = {
   name: "BattleForce A",
-  forces: [...force("Tank", 3, 2), ...force("Infantry", 3, 1)],
+  forces: [...force("Tank", 3, 3)],
   attackOrder: [
     "MAX",
     UnitClassType.G,
@@ -233,7 +233,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
           </ListItemText>
           <FormControl size="small">
             <Select
-              value={Nations.indexOf(forceA.nation)}
+              value={Nations.map(nation => nation.name).indexOf(forceA.nation?.name)}
               onChange={(e) => changeNation(e.target.value)}
             >
               {Nations.map((nation, index) => {
@@ -403,7 +403,7 @@ function HelpDialogSlide() {
 
 function App() {
   const [combatRounds, setCombatRounds] = React.useState([
-    { attacker: "A", hasDoWFirstFire: true },
+    { attacker: "A", hasDoWFirstFire: false },
     { attacker: "B" },
   ]);
   const [battleforceA, setBattleforceA] = React.useState(initialAttacker);
