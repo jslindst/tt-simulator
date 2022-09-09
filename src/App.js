@@ -61,7 +61,7 @@ const Nations = [
     name: "USSR",
     pipColor: "white",
     color: "rgb(221,72,56)",
-    darkTone: "rgb(216,39,31)",
+    darkTone: "rgb(186,39,31)",
     maxPips: 3,
   },
   {

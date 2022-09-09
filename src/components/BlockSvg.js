@@ -117,7 +117,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
 
         {block.name === UnitName.Sub ? (
           <g transform={`rotate(-45,50,50),translate(50,50),scale(${scale})`}>
-            <g filter="opacity(0.4)" fill="white">
+            <g opacity="0.4" fill="white">
               <rect x="-54" y="-12" width="108" height="24" rx="12" />
             </g>
           </g>
@@ -138,7 +138,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
             <g transform="rotate(-45,50,50)">
               <image x="0" y="0" width="100" height="100" href={CarrierIcon} />
             </g>
-            <g transform="translate(68,68),scale(0.3)" filter="opacity(0.4)">
+            <g transform="translate(68,68),scale(0.3)" opacity="0.4">
               <g transform="rotate(-45,0,0)">
                 <image
                   fill={nation.darkTone}
