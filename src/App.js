@@ -4,7 +4,6 @@ import List from "@mui/material/List";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Slide from "@mui/material/Slide";
 
@@ -14,6 +13,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
+import InfoIcon from "@mui/icons-material/Info";
 
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
@@ -45,33 +45,13 @@ import {
   unitTable,
   unitLookup,
   UnitClassType,
+  UnitName,
+  Nations,
+  NationLookup,
 } from "./model/battle.ts";
 import React from "react";
 import Plot from "react-plotly.js";
-
-const Nations = [
-  {
-    name: "Axis",
-    color: "rgb(162,163,162)",
-    pipColor: "black",
-    darkTone: "rgb(111,113,112)",
-    maxPips: 4,
-  },
-  {
-    name: "USSR",
-    pipColor: "white",
-    color: "rgb(221,72,56)",
-    darkTone: "rgb(186,39,31)",
-    maxPips: 3,
-  },
-  {
-    name: "West",
-    pipColor: "white",
-    color: "rgb(30,120,171)",
-    darkTone: "rgb(2, 55, 83)",
-    maxPips: 4,
-  },
-];
+import { Tooltip } from "@mui/material";
 
 const initialDefender = {
   name: "BattleForce B",
@@ -84,11 +64,14 @@ const initialDefender = {
     UnitClassType.I,
   ],
   forces: [...force("Infantry", 4), ...force("Infantry", 4)],
-  nation: Nations[2],
+  //forces: [...force("Fleet", 4, 2)],
+  nationName: "Axis",
+  //nationName: "Japanese (CnC)",
 };
 
 const initialAttacker = {
   name: "BattleForce A",
+  //forces: [...force("Fleet", 4, 2)],
   forces: [...force("Tank", 3, 3)],
   attackOrder: [
     "MAX",
@@ -100,7 +83,7 @@ const initialAttacker = {
   ],
   reduceOrder: ["Tank", "Infantry", "Fortress", "Fleet", "Carrier", "Convoy"],
   DoW: false,
-  nation: Nations[1],
+  nationName: "West",
 };
 
 const VisualizeForce = ({
@@ -109,21 +92,17 @@ const VisualizeForce = ({
   modifyBlock,
   canModify = true,
 }) => {
+  const nation = NationLookup[attacker.nationName];
+
   if (attacker?.forces === undefined || attacker.forces.length === 0) {
-    return (
-      <BlockSvg
-        id={`${attacker.nation.name}-defeated`}
-        key={0}
-        nation={attacker.nation}
-      />
-    );
+    return <BlockSvg id={`${nation.name}-defeated`} key={0} nation={nation} />;
   }
   return attacker?.forces?.map((unit, index) => {
     return (
       <BlockSvg
-        id={`${attacker.nation.name}-${unit.name}-${unit.strength}`}
-        key={`${index}-${attacker.nation.name}-${unit.name}-${unit.strength}`}
-        nation={attacker.nation}
+        id={`${nation.name}-${unit.name}-${unit.strength}`}
+        key={`${index}-${nation.name}-${unit.name}-${unit.strength}`}
+        nation={nation}
         block={unit}
         onClick={(e) => {
           if (!canModify) return;
@@ -144,11 +123,28 @@ const ForcePanel = ({ attacker, onUpdate }) => {
   function changeNation(index) {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
-      copy.nation = Nations[index];
+      const oldNation = NationLookup[copy.nationName];
+      const newNation = Nations[index];
+      copy.nationName = newNation.name;
       copy.forces.forEach((block) => {
         if (unitLookup[block.name].special) return;
-        block.strength = Math.min(block.strength, copy.nation.maxPips);
+        block.strength = Math.min(
+          block.strength,
+          newNation.maxPips(block.name)
+        );
       });
+      // remove non matching edition units.
+      copy.forces = copy.forces.filter(
+        (unit) => unitLookup[unit.name][newNation.edition] === true
+      );
+      return copy;
+    });
+  }
+
+  function removeBlocks() {
+    onUpdate((old) => {
+      const copy = JSON.parse(JSON.stringify(old));
+      copy.forces = [];
       return copy;
     });
   }
@@ -165,10 +161,12 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
       const block = copy.forces[index];
+      const nation = NationLookup[copy.nationName];
       var val = block.strength + value;
       if (!unitLookup[block.name].special) {
-        while (val <= 0) val += copy.nation.maxPips;
-        while (val > copy.nation.maxPips) val -= copy.nation.maxPips;
+        while (val <= 0) val += nation.maxPips(block.name);
+        while (val > nation.maxPips(block.name))
+          val -= nation.maxPips(block.name);
       } else {
         if (val <= 0) copy.forces.splice(index, 1);
       }
@@ -180,7 +178,9 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     onUpdate((old) => {
       console.log("Add Block");
       const copy = JSON.parse(JSON.stringify(old));
-      const strength = unitLookup[unitType].special ? 10 : copy.nation.maxPips;
+      const strength = unitLookup[unitType].special
+        ? 10
+        : NationLookup[copy.nationName].maxPips(unitType);
       copy.forces.push(...force(unitType, strength));
       return copy;
     });
@@ -216,7 +216,23 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     });
   }
 
+  const toRichText = (value) => {
+    if (value === undefined || value === null) return "";
+    //@ts-ignore
+    var texts = value.split("\n").filter((text) => text.trim().length > 0);
+    if (texts.length === 0) return "";
+    //@ts-ignore
+    return (
+      <>
+        {texts.map((text) => (
+          <p>{text}</p>
+        ))}
+      </>
+    );
+  };
+
   const forceA = attacker;
+  const nation = NationLookup[attacker.nationName];
 
   const CV = forceA.forces
     .filter((item) => item.name !== "Industry")
@@ -235,10 +251,27 @@ const ForcePanel = ({ attacker, onUpdate }) => {
         <ListItemText>
           {forceA.name} (CV {CV} {IND > 0 ? `, IND ${IND}` : ""})
         </ListItemText>
+        {nation.description ? (
+          <Tooltip title={toRichText(nation.description)} arrow>
+            <InfoIcon
+              style={{
+                transform: "scale(0.8)",
+                padding: -3,
+                margin: -3,
+                verticalAlign: "bottom",
+                color: "orange",
+              }}
+              fontSize="small"
+            />
+          </Tooltip>
+        ) : (
+          ""
+        )}
+
         <FormControl size="small">
           <Select
             value={Nations.map((nation) => nation.name).indexOf(
-              forceA.nation?.name
+              forceA.nationName
             )}
             onChange={(e) => changeNation(e.target.value)}
           >
@@ -253,6 +286,9 @@ const ForcePanel = ({ attacker, onUpdate }) => {
         </FormControl>
       </ListItem>
       <ListItem disablePadding>
+        <IconButton onClick={removeBlocks}>
+          <HighlightOffIcon size="small" />
+        </IconButton>
         <VisualizeForce
           key="force"
           attacker={forceA}
@@ -270,16 +306,26 @@ const ForcePanel = ({ attacker, onUpdate }) => {
             >
               {unitTable
                 .filter((unit) => unit.special === false || IND === 0)
+                .filter(
+                  (unit) =>
+                    unit[NationLookup[forceA.nationName].edition] === true
+                )
                 .map((unit, index) => {
                   return (
                     <MenuItem key={unit.name} value={unit.name}>
                       <BlockSvg
-                        id={`${forceA.nation.name}-${unit.name}-${forceA.nation.maxPips}`}
+                        id={`${forceA.nationName}-${unit.name}-${NationLookup[
+                          forceA.nationName
+                        ].maxPips(unit.name)}`}
                         key={`index${unit.name}`}
-                        nation={forceA.nation}
+                        nation={NationLookup[forceA.nationName]}
                         block={{
                           name: unit.name,
-                          strength: unit.special ? 10 : forceA.nation.maxPips,
+                          strength: unit.special
+                            ? 10
+                            : NationLookup[forceA.nationName].maxPips(
+                                unit.name
+                              ),
                         }}
                       />
                     </MenuItem>
@@ -372,12 +418,14 @@ function HelpDialogSlide() {
         keepMounted
         onClose={handleClose}
       >
-        <DialogTitle>{"Tragedy & Triumph Combat Simulator"}</DialogTitle>
+        <DialogTitle>{"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}</DialogTitle>
         <DialogContent>
           <p>
             This is a combat simulator for the{" "}
             <a href="https://www.gmtgames.com/p-722-triumph-and-tragedy-3rd-printing.aspx">
               Tragedy &amp; Triumph
+            </a>{" "}            <a href="https://www.gmtgames.com/p-840-conquest-and-consequence.aspx">
+              Conquest &amp; Consequence
             </a>{" "}
             board game by Craig Besinque published by GMT Games LLC.
           </p>
@@ -425,12 +473,15 @@ function HelpDialogSlide() {
             <li>
               Target Class Priority: MAX targets the opposing unit class with
               highest chance of hitting, not damaging - ie. double hits are not
-              considered
+              considered.
             </li>
             <li>
               Battlegroups: Currently only one battlegroup is possible on each
               side, so reinforcements or multiple battlegroups joining are not
               simulated.
+            </li>
+            <li>
+              CnC - Kamikaze: Option not implemented.
             </li>
           </ul>
 
@@ -454,7 +505,6 @@ function HelpDialogSlide() {
 function App() {
   const [combatRounds, setCombatRounds] = React.useState([
     { attacker: "A", hasDoWFirstFire: false },
-    { attacker: "B" },
   ]);
   const [battleforceA, setBattleforceA] = React.useState(initialAttacker);
   const [battleforceB, setBattleforceB] = React.useState(initialDefender);
@@ -468,19 +518,28 @@ function App() {
     simulations
   );
 
-  function findExample(resultData) {
+  function findExample(resultData, number = 1) {
     const Aresults = groupByReduceFunction(resultData, (result) => {
-      return result.forces.reduce((val, item) => {
-        return item.strength ? val + item.strength : val;
+      return result.forces.reduce((hash, block) => {
+        return hash + Math.pow(100, unitLookup[block.name].id) * block.strength;
       }, 0);
     });
-    const Acounts = Object.keys(Aresults).sort(
+    const hashesSorted = Object.keys(Aresults).sort(
       (a, b) => Aresults[b].length - Aresults[a].length
     );
-    return Aresults[Acounts[0]][0];
+
+    const examples = [];
+    for (var i = 0; i < number && i < hashesSorted.length; i++) {
+      examples.push({
+        result: Aresults[hashesSorted[i]][0],
+        count: Aresults[hashesSorted[i]].length,
+      });
+    }
+    return examples;
   }
-  const Aexample = findExample(aResults);
-  const Oexample = findExample(oResults);
+  const likelyResultsForA = findExample(aResults, 5);
+  const likelyResultsForB = findExample(oResults, 5);
+  console.log(likelyResultsForA);
 
   function setDoW(value) {
     const copy = JSON.parse(JSON.stringify(combatRounds));
@@ -543,7 +602,7 @@ function App() {
         <AppBar position="static">
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Tragedy &amp; Triumph Combat Simulator v1.0
+              Tragedy &amp; Triumph / Conquest &amp; Consequence - Combat Simulator v1.0
             </Typography>
             <HelpDialogSlide />
           </Toolbar>
@@ -573,6 +632,10 @@ function App() {
                 <IconButton onClick={() => addCombatRound()}>
                   <AddCircleIcon size="small" />
                 </IconButton>
+                <span className="instruction">
+                  (Combat Round involves an exchange of fire between both sides,
+                  Defender first, unless DoW or FirstFire apply){" "}
+                </span>
               </ListItemText>
             </ListItem>
             {combatRounds.map((round, index) => {
@@ -652,10 +715,29 @@ function App() {
         <ListItem>
           <Grid container>
             <Grid item xs={6}>
-              <VisualizeForce attacker={Aexample} canModify={false} />
+              <List>
+                {likelyResultsForA.map((res) => (
+                  <ListItem>
+                    <VisualizeForce attacker={res.result} canModify={false} />
+                    <ListItemText>
+                      {Math.round((res.count / simulations) * 1000) / 10} %
+                    </ListItemText>
+                  </ListItem>
+                ))}
+              </List>
             </Grid>
             <Grid item xs={6}>
-              <VisualizeForce attacker={Oexample} canModify={false} />
+              <List>
+                {likelyResultsForB.map((res) => (
+                  <ListItem>
+                    <VisualizeForce attacker={res.result} canModify={false} />
+                    <ListItemText>
+                      {" "}
+                      {Math.round((res.count / simulations) * 1000) / 10} %
+                    </ListItemText>
+                  </ListItem>
+                ))}
+              </List>
             </Grid>
           </Grid>
         </ListItem>
@@ -670,7 +752,7 @@ function App() {
                   name: battleforceA.name,
                   opacity: 0.8,
                   marker: {
-                    color: battleforceA.nation.color,
+                    color: NationLookup[battleforceA.nationName].color,
                   },
                 },
                 {
@@ -679,7 +761,7 @@ function App() {
                   name: battleforceB.name,
                   opacity: 0.8,
                   marker: {
-                    color: battleforceB.nation.color,
+                    color: NationLookup[battleforceB.nationName].color,
                   },
                 },
               ]}

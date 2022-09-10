@@ -5,6 +5,67 @@ import AirForceIcon from "./spitfire.svg";
 import SubIcon from "./noun-submarine-1189639.svg";
 import CarrierIcon from "./noun-carrier-1201287.svg";
 import FactoryIcon from "./noun-factory-997898.svg";
+import AnchorIcon from "./noun-anchor-1089371.svg";
+
+const PipsElement = ({ maxPips, pipColor, edition }) => {
+  if (edition === "CnC")
+    return (
+      <g fill={pipColor} transform={`rotate(${(maxPips - 1) * 90}, 50, 50)`}>
+        {maxPips === 4 ? (
+          <g>
+            <rect x={82} y={28} width="8" height="8" />
+            <rect x={82} y={40} width="8" height="8" />
+            <rect x={82} y={52} width="8" height="8" />
+            <rect x={82} y={64} width="8" height="8" />
+          </g>
+        ) : (
+          ""
+        )}
+
+        {maxPips >= 3 ? (
+          <g>
+            <rect x={34} y={82} width="8" height="8" />
+            <rect x={46} y={82} width="8" height="8" />
+            <rect x={58} y={82} width="8" height="8" />F
+          </g>
+        ) : (
+          ""
+        )}
+
+        <rect x={10} y={40} width="8" height="8" />
+        <rect x={10} y={52} width="8" height="8" />
+
+        <rect x={46} y={10} width="8" height="8" />
+      </g>
+    );
+  return (
+    <g fill={pipColor} transform={`rotate(${(maxPips - 1) * 90}, 50, 50)`}>
+      {maxPips === 4 ? (
+        <g>
+          <circle cx={86} cy={32} r="4" />
+          <circle cx={86} cy={44} r="4" />
+          <circle cx={86} cy={56} r="4" />
+          <circle cx={86} cy={68} r="4" />
+        </g>
+      ) : (
+        ""
+      )}
+      {maxPips >= 3 ? (
+        <g>
+          <circle cx={38} cy={86} r="4" />
+          <circle cx={50} cy={86} r="4" />
+          <circle cx={62} cy={86} r="4" />
+        </g>
+      ) : (
+        ""
+      )}
+      <circle cx={14} cy={44} r="4" />
+      <circle cx={14} cy={56} r="4" />
+
+      <circle cx={50} cy={14} r="4" />
+    </g>
+  );
+};
 
 export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
   if (block === null || block === undefined) {
@@ -44,7 +105,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
   const unitType = unitLookup[block.name];
   const transform = unitType.special
     ? ""
-    : `rotate(${(block.strength - nation.maxPips) * 90},50,50)`;
+    : `rotate(${(block.strength - nation.maxPips(block.name)) * 90},50,50)`;
 
   var icon = null;
   var scale = 1.0;
@@ -186,6 +247,36 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
           ""
         )}
 
+        {block.name === UnitName.Marine ? (
+          <g>
+            <g stroke="white" strokeWidth="2" fill={nation.darkTone}>
+              <polygon points="23,23 23,77 77,77 77,23" />
+            </g>
+            <g filter="invert(1)" transform={`translate(50,50),scale(0.45)`}>
+              <image
+                fill="white"
+                x="-50"
+                y="-50"
+                width="100"
+                height="100"
+                href={AnchorIcon}
+              />
+            </g>
+          </g>
+        ) : (
+          ""
+        )}
+
+        {block.name === UnitName.Militia ? (
+          <g stroke="white" strokeWidth="2" fill={nation.darkTone}>
+            <polygon points="23,23 23,77 77,77 77,23" />
+            <polygon points="38,38 62,62" />
+            <polygon points="38,62 62,38" />
+          </g>
+        ) : (
+          ""
+        )}
+
         {block.name === UnitName.Tank ? (
           <g stroke="white" strokeWidth="2" fill={nation.darkTone}>
             <polygon points="23,23 23,77 77,77 77,23" />
@@ -234,30 +325,11 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
             </text>
           </g>
         ) : (
-          <g
-            fill={nation.pipColor}
-            transform={`rotate(${(nation.maxPips - 1) * 90}, 50, 50)`}
-          >
-            {nation.maxPips === 4 ? (
-              <g>
-                <circle cx={86} cy={32} r="4" />
-                <circle cx={86} cy={44} r="4" />
-                <circle cx={86} cy={56} r="4" />
-                <circle cx={86} cy={68} r="4" />
-              </g>
-            ) : (
-              ""
-            )}
-
-            <circle cx={38} cy={86} r="4" />
-            <circle cx={50} cy={86} r="4" />
-            <circle cx={62} cy={86} r="4" />
-
-            <circle cx={14} cy={44} r="4" />
-            <circle cx={14} cy={56} r="4" />
-
-            <circle cx={50} cy={14} r="4" />
-          </g>
+          <PipsElement
+            maxPips={nation.maxPips(unitType.name)}
+            pipColor={nation.pipColor}
+            edition={nation.edition}
+          />
         )}
       </g>
     </svg>
