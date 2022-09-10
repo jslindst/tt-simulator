@@ -504,7 +504,8 @@ function HelpDialogSlide() {
 }
 
 function App() {
-  const location = window.location.pathname;
+
+  const location = window.location.search;
   if (location.match(/cnc/gi)) {
     initialAttackerTnT.nationName = "US (CnC)";
     initialDefenderTnT.nationName = "Japanese (CnC)";
