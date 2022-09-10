@@ -602,7 +602,7 @@ function App() {
         <AppBar position="static">
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Tragedy &amp; Triumph / Conquest &amp; Consequence - Combat Simulator v1.0
+              Tragedy &amp; Triumph / Conquest &amp; Consequence - Combat Simulator v1.1
             </Typography>
             <HelpDialogSlide />
           </Toolbar>
