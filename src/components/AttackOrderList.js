@@ -35,7 +35,6 @@ const getListStyle = isDraggingOver => ({
 export class AttackOrderList extends Component {
   constructor(props) {
     super(props);
-    console.log("props", props);
     this.itemsList = props.items.map(item => { return { id: item, content: item }});
     this.onDragEnd = this.onDragEnd.bind(this);
     this.onOrderChanged = props.onOrderChanged;

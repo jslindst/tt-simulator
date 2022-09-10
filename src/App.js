@@ -1,6 +1,5 @@
 import Grid from "@mui/material/Grid"; // Grid version 1
 import List from "@mui/material/List";
-
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -45,7 +44,6 @@ import {
   unitTable,
   unitLookup,
   UnitClassType,
-  UnitName,
   Nations,
   NationLookup,
 } from "./model/battle.ts";
@@ -53,7 +51,7 @@ import React from "react";
 import Plot from "react-plotly.js";
 import { Tooltip } from "@mui/material";
 
-const initialDefender = {
+const initialDefenderTnT = {
   name: "BattleForce B",
   attackOrder: [
     "MAX",
@@ -69,7 +67,7 @@ const initialDefender = {
   //nationName: "Japanese (CnC)",
 };
 
-const initialAttacker = {
+const initialAttackerTnT = {
   name: "BattleForce A",
   //forces: [...force("Fleet", 4, 2)],
   forces: [...force("Tank", 3, 3)],
@@ -119,6 +117,19 @@ const VisualizeForce = ({
   });
 };
 
+const validateBlocks = (force) => {
+  const nation = NationLookup[force.nationName];
+
+  force.forces.forEach((block) => {
+    if (unitLookup[block.name].special) return;
+    block.strength = Math.min(block.strength, nation.maxPips(block.name));
+  });
+  force.forces = force.forces.filter(
+    (unit) => unitLookup[unit.name][nation.edition] === true
+  );
+  return force;
+};
+
 const ForcePanel = ({ attacker, onUpdate }) => {
   function changeNation(index) {
     onUpdate((old) => {
@@ -126,18 +137,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       const oldNation = NationLookup[copy.nationName];
       const newNation = Nations[index];
       copy.nationName = newNation.name;
-      copy.forces.forEach((block) => {
-        if (unitLookup[block.name].special) return;
-        block.strength = Math.min(
-          block.strength,
-          newNation.maxPips(block.name)
-        );
-      });
-      // remove non matching edition units.
-      copy.forces = copy.forces.filter(
-        (unit) => unitLookup[unit.name][newNation.edition] === true
-      );
-      return copy;
+      return validateBlocks(copy);
     });
   }
 
@@ -224,8 +224,8 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     //@ts-ignore
     return (
       <>
-        {texts.map((text) => (
-          <p>{text}</p>
+        {texts.map((text, index) => (
+          <p key={index}>{text}</p>
         ))}
       </>
     );
@@ -247,7 +247,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       component="nav"
       aria-labelledby="nested-list-subheader"
     >
-      <ListItem disablePadding>
+      <ListItem disablePadding key="title">
         <ListItemText>
           {forceA.name} (CV {CV} {IND > 0 ? `, IND ${IND}` : ""})
         </ListItemText>
@@ -285,7 +285,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
           </Select>
         </FormControl>
       </ListItem>
-      <ListItem disablePadding>
+      <ListItem disablePadding key="forces">
         <IconButton onClick={removeBlocks}>
           <HighlightOffIcon size="small" />
         </IconButton>
@@ -335,7 +335,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
           </FormControl>
         </ListItemText>
       </ListItem>
-      <ListItem disablePadding>
+      <ListItem disablePadding key="techs">
         <ListItemText primary="Units with FirstFire" />
         <FormControl size="small">
           <Select
@@ -361,14 +361,14 @@ const ForcePanel = ({ attacker, onUpdate }) => {
           </Select>
         </FormControl>
       </ListItem>
-      <ListItem>
+      <ListItem key="techList">
         <ListItemText>
           {forceA.FirstFire?.map((val, index) => {
             return <Chip label={val} onClick={() => removeFirstFire(val)} />;
           })}
         </ListItemText>
       </ListItem>
-      <ListItem disablePadding>
+      <ListItem disablePadding key="priorities">
         <ListItemText>Target Class priority</ListItemText>
         <AttackOrderList
           key="order"
@@ -418,13 +418,16 @@ function HelpDialogSlide() {
         keepMounted
         onClose={handleClose}
       >
-        <DialogTitle>{"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}</DialogTitle>
+        <DialogTitle>
+          {"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}
+        </DialogTitle>
         <DialogContent>
           <p>
             This is a combat simulator for the{" "}
             <a href="https://www.gmtgames.com/p-722-triumph-and-tragedy-3rd-printing.aspx">
               Tragedy &amp; Triumph
-            </a>{" "}            <a href="https://www.gmtgames.com/p-840-conquest-and-consequence.aspx">
+            </a>{" "}
+            <a href="https://www.gmtgames.com/p-840-conquest-and-consequence.aspx">
               Conquest &amp; Consequence
             </a>{" "}
             board game by Craig Besinque published by GMT Games LLC.
@@ -480,9 +483,7 @@ function HelpDialogSlide() {
               side, so reinforcements or multiple battlegroups joining are not
               simulated.
             </li>
-            <li>
-              CnC - Kamikaze: Option not implemented.
-            </li>
+            <li>CnC - Kamikaze: Option not implemented.</li>
           </ul>
 
           <p>
@@ -503,11 +504,19 @@ function HelpDialogSlide() {
 }
 
 function App() {
+  const location = window.location.pathname;
+  if (location.match(/cnc/gi)) {
+    initialAttackerTnT.nationName = "US (CnC)";
+    initialDefenderTnT.nationName = "Japanese (CnC)";
+  }
+  validateBlocks(initialAttackerTnT);
+  validateBlocks(initialDefenderTnT);
+
   const [combatRounds, setCombatRounds] = React.useState([
     { attacker: "A", hasDoWFirstFire: false },
   ]);
-  const [battleforceA, setBattleforceA] = React.useState(initialAttacker);
-  const [battleforceB, setBattleforceB] = React.useState(initialDefender);
+  const [battleforceA, setBattleforceA] = React.useState(initialAttackerTnT);
+  const [battleforceB, setBattleforceB] = React.useState(initialDefenderTnT);
 
   const simulations = 10000;
 
@@ -539,7 +548,6 @@ function App() {
   }
   const likelyResultsForA = findExample(aResults, 5);
   const likelyResultsForB = findExample(oResults, 5);
-  console.log(likelyResultsForA);
 
   function setDoW(value) {
     const copy = JSON.parse(JSON.stringify(combatRounds));
@@ -602,14 +610,15 @@ function App() {
         <AppBar position="static">
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Tragedy &amp; Triumph / Conquest &amp; Consequence - Combat Simulator v1.1
+              Tragedy &amp; Triumph / Conquest &amp; Consequence - Combat
+              Simulator v1.1
             </Typography>
             <HelpDialogSlide />
           </Toolbar>
         </AppBar>
       </Box>
       <List>
-        <ListItem>
+        <ListItem key="forces">
           <Grid container spacing={0}>
             <Grid item xs={6}>
               <ForcePanel attacker={battleforceA} onUpdate={updateAttacker} />
@@ -620,7 +629,7 @@ function App() {
           </Grid>
         </ListItem>
         <Divider />
-        <ListItem>
+        <ListItem key="combatRounds">
           <List
             md={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
             component="nav"
@@ -711,13 +720,13 @@ function App() {
           </List>
         </ListItem>
         <Divider />
-        <ListItem>Simulation results (most likely outcome)</ListItem>
-        <ListItem>
+        <ListItem key="subHeaderOutcome">Simulation results (most likely outcome)</ListItem>
+        <ListItem key="outcomes">
           <Grid container>
             <Grid item xs={6}>
               <List>
-                {likelyResultsForA.map((res) => (
-                  <ListItem>
+                {likelyResultsForA.map((res, index) => (
+                  <ListItem key={index}>
                     <VisualizeForce attacker={res.result} canModify={false} />
                     <ListItemText>
                       {Math.round((res.count / simulations) * 1000) / 10} %
@@ -728,8 +737,8 @@ function App() {
             </Grid>
             <Grid item xs={6}>
               <List>
-                {likelyResultsForB.map((res) => (
-                  <ListItem>
+                {likelyResultsForB.map((res, index) => (
+                  <ListItem key={index}>
                     <VisualizeForce attacker={res.result} canModify={false} />
                     <ListItemText>
                       {" "}
@@ -741,7 +750,7 @@ function App() {
             </Grid>
           </Grid>
         </ListItem>
-        <ListItem>
+        <ListItem key="graph">
           <Container>
             <Plot
               config={{ displayModeBar: false, responsive: true }}
