@@ -46,6 +46,7 @@ import {
   UnitClassType,
   Nations,
   NationLookup,
+  UnitName
 } from "./model/battle.ts";
 import React from "react";
 import Plot from "react-plotly.js";
@@ -116,6 +117,20 @@ const VisualizeForce = ({
     );
   });
 };
+
+const ForceStrength = ({force}) => {
+  const CV = force.forces
+    .filter((item) => item.name !== UnitName.Industry)
+    .reduce((total, item) => total + item.strength, 0);
+  const IND = force.forces
+    .filter((item) => item.name === UnitName.Industry)
+    .reduce((total, item) => total + item.strength, 0);
+  return <>(CV {CV}{IND > 0 ? `, IND ${IND}` : ""})</>
+}
+
+const ForceTitle = ({force}) => {
+  return (<>{force.name} <ForceStrength force={force} /></>);
+}
 
 const validateBlocks = (force) => {
   const nation = NationLookup[force.nationName];
@@ -243,13 +258,13 @@ const ForcePanel = ({ attacker, onUpdate }) => {
 
   return (
     <List
-      sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
+      sx={{ width: "100%", maxWidth: 420, bgcolor: "background.paper" }}
       component="nav"
       aria-labelledby="nested-list-subheader"
     >
       <ListItem disablePadding key="title">
         <ListItemText>
-          {forceA.name} (CV {CV} {IND > 0 ? `, IND ${IND}` : ""})
+          <ForceTitle force={forceA} />
         </ListItemText>
         {nation.description ? (
           <Tooltip title={toRichText(nation.description)} arrow>
@@ -730,7 +745,9 @@ function App() {
                   <ListItem key={index}>
                     <VisualizeForce attacker={res.result} canModify={false} />
                     <ListItemText>
-                      {Math.round((res.count / simulations) * 1000) / 10} %
+                    <ForceStrength force={res.result} />
+                    {" - "}
+                      {Math.round((res.count / simulations) * 1000) / 10} % 
                     </ListItemText>
                   </ListItem>
                 ))}
@@ -742,8 +759,9 @@ function App() {
                   <ListItem key={index}>
                     <VisualizeForce attacker={res.result} canModify={false} />
                     <ListItemText>
-                      {" "}
-                      {Math.round((res.count / simulations) * 1000) / 10} %
+                      <ForceStrength force={res.result} />
+                      {" - "}
+                      {Math.round((res.count / simulations) * 1000) / 10} % 
                     </ListItemText>
                   </ListItem>
                 ))}
