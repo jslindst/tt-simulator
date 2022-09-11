@@ -364,12 +364,12 @@ const ForcePanel = ({ attacker, onUpdate }) => {
         <ListItemText primary="Technologies" />
         <FormControl size="small">
           <Select
-            id="addFirstFire"
+            id="addTechnology"
             value=""
             IconComponent={AddIcon}
             onChange={(e) => addTechnology(e.target.value)}
           >
-            {Technologies.map((tech) => {
+            {Technologies.filter(tech => tech.selectable && ! forceA.technologies?.includes(tech.name)).map((tech) => {
               return (
                 <MenuItem key={tech.name} value={tech.name}>
                   {tech.name}

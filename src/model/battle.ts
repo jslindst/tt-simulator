@@ -24,6 +24,17 @@ export type Technology = {
 }
 
 export const Technologies: Technology[] = [
+  { name: "AmphTracks", edition: "CnC", ignoreSeaInvasion: true, selectable: true },
+  {
+    name: "AutoCannons", edition: "CnC", attackModifier: {
+      Fleet: {
+        "A": 2
+      },
+      Carrier: {
+        "A": 3
+      }
+    }, selectable: true
+  },
   {
     name: "AirDefense Radar", edition: "TnT", attackMultiplier: {
       "Air Force": {
@@ -33,14 +44,37 @@ export const Technologies: Technology[] = [
   },
   //  { name: "Heavy Bombers", edition: "TnT" },
   {
-    name: "Precision Bombsight", edition: "TnT", attackModifier: {
+    name: "Dive Bombing", edition: "CnC", attackModifier: {
+      "Air Force": {
+        "N": 2
+      }
+    }, selectable: true
+  },
+  { name: "Heavy Tanks", edition: "TnT", firstFire: UnitName.Tank, selectable: true },
+  {
+    name: "Improved Torpedoes", edition: "Cnc", attackModifier: {
+      "Sub": {
+        "N": 2
+      }
+    }, selectable: true
+  },  
+  {
+    name: "Incendiaries", edition: "CnC", attackModifier: {
       "Air Force": {
         "IND": 1
       }
     }, selectable: true
   },
   { name: "Jets", edition: "TnT", firstFire: UnitName.AirForce, selectable: true },
+  {
+    name: "Precision Bombsight", edition: "TnT", attackModifier: {
+      "Air Force": {
+        "IND": 1
+      }
+    }, selectable: true
+  },
   { name: "Naval Radar", edition: "TnT", firstFire: UnitName.Fleet, selectable: true },
+  { name: "Rocket Artillery", edition: "TnT", firstFire: UnitName.Infantry, selectable: true },
   {
     name: "Sonar", edition: "TnT", attackModifier: {
       "Fleet": {
@@ -48,35 +82,8 @@ export const Technologies: Technology[] = [
       }
     }, selectable: true
   },
-  { name: "Heavy Tanks", edition: "TnT", firstFire: UnitName.Tank, selectable: true },
-  { name: "Rocket Artillery", edition: "TnT", firstFire: UnitName.Infantry, selectable: true },
   //  { name: "Motorized Infantry", edition: "TnT" },
   //  { name: "LST", edition: "TnT" },
-  {
-    name: "AutoCannons", edition: "CnC", attackModifier: {
-      "Fleet": {
-        "A": 2
-      },
-      "Carrier": {
-        "A": 3
-      }
-    }, selectable: true
-  },
-  { name: "AmphTracks", edition: "CnC", ignoreSeaInvasion: true, selectable: true },
-  {
-    name: "Dive Bombing", edition: "CnC", attackModifier: {
-      "Air Force": {
-        "N": 2
-      }
-    }, selectable: true
-  },
-  {
-    name: "Incendiaries", edition: "TnT", attackModifier: {
-      "Air Force": {
-        "IND": 1
-      }
-    }, selectable: true
-  },
   {
     name: "LongLance", edition: "CnC", attackModifier: {
       "Fleet": {
@@ -370,21 +377,27 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
   if (firingBlock.nation?.specialTechnologies) techs.push(...firingBlock.nation?.specialTechnologies.map(name => TechLookup[name]));
   if (technologies) techs.push(...technologies.map(name => TechLookup[name]));
 
-  const techToHit = techs?.filter(tech =>
-    tech.attackModifier &&
-    tech.attackModifier[firingBlock.name] &&
-    tech.attackModifier[firingBlock.name][targetUnitType] !== null);
+  const techToHit = techs?.map(tech => {
+    if (tech.attackModifier === undefined) return null;
+    if (tech.attackModifier[firingBlock.name] === undefined) return null;
+    return tech.attackModifier[firingBlock.name][targetUnitType];
+  }).filter(item => item !== null && item !== undefined);
+
+  if (techToHit.length > 1) {
+    console.log(techToHit);
+    throw new Error("too many")
+  }
 
   const multipliers = techs?.map(tech => {
     if (tech.attackMultiplier === undefined) return null;
     if (tech.attackMultiplier[firingBlock.name] === undefined) return null;
     return tech.attackMultiplier[firingBlock.name][targetUnitType];
-  }).filter(item => item !== null);
+  }).filter(item => item !== null && item !== undefined);
   const multiplier = multipliers.length > 0 && multipliers[0] > 1 ? multipliers[0] : 1;
 
   if (LOG) console.log("applicable techs", techToHit);
 
-  const toHit = techToHit?.length > 0 && techToHit[0].attackModifier[firingBlock.name][targetUnitType] > 0 ? techToHit[0].attackModifier[firingBlock.name][targetUnitType] : unitLookup[firingBlock.name][targetUnitType];
+  const toHit = techToHit?.length > 0 && techToHit[0] > 0 ? techToHit[0] : unitLookup[firingBlock.name][targetUnitType];
 
   const hits = attack(firingBlock.strength * multiplier, toHit);
   totalHits += hits;
