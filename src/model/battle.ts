@@ -345,12 +345,27 @@ function applyHits(targets: Block[], hits, targetType: UnitClass) {
 
 function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrder, technologies: string[]) {
   const firingUnit = unitLookup[firingBlock.name];
-  var order = [...attackOrder];
 
+  const toHitTable = {}
+
+  unitClasses.forEach(unitClass => {toHitTable[unitClass] = firingUnit[unitClass]});
+
+  const techs: Technology[] = [];
+  if (firingBlock.nation?.specialTechnologies) techs.push(...firingBlock.nation?.specialTechnologies.map(name => TechLookup[name]));
+  if (technologies) techs.push(...technologies.map(name => TechLookup[name]));
+
+  techs?.forEach(tech => {
+    if (tech.attackModifier === undefined) return;
+    if (tech.attackModifier[firingBlock.name] === undefined) return;
+    const toHitOverride = tech.attackModifier[firingBlock.name];
+    Object.keys(toHitOverride).forEach(key => toHitTable[key] = toHitOverride[key]);
+  });
+
+  var order = [...attackOrder];
   order.splice(order.indexOf("MAX"), 1, ...firingUnit.preferredOrder);
 
   // remove units that cannot be damaged
-  //order = order.filter(item => firingUnit[item] > 0);
+  order = order.filter(item => toHitTable[item] > 0);
 
 
   //@ts-ignore
@@ -373,21 +388,6 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
   if (LOG) console.log("firing block nation", firingBlock.nation);
 
 
-  const techs: Technology[] = [];
-  if (firingBlock.nation?.specialTechnologies) techs.push(...firingBlock.nation?.specialTechnologies.map(name => TechLookup[name]));
-  if (technologies) techs.push(...technologies.map(name => TechLookup[name]));
-
-  const techToHit = techs?.map(tech => {
-    if (tech.attackModifier === undefined) return null;
-    if (tech.attackModifier[firingBlock.name] === undefined) return null;
-    return tech.attackModifier[firingBlock.name][targetUnitType];
-  }).filter(item => item !== null && item !== undefined);
-
-  if (techToHit.length > 1) {
-    console.log(techToHit);
-    throw new Error("too many")
-  }
-
   const multipliers = techs?.map(tech => {
     if (tech.attackMultiplier === undefined) return null;
     if (tech.attackMultiplier[firingBlock.name] === undefined) return null;
@@ -395,9 +395,8 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
   }).filter(item => item !== null && item !== undefined);
   const multiplier = multipliers.length > 0 && multipliers[0] > 1 ? multipliers[0] : 1;
 
-  if (LOG) console.log("applicable techs", techToHit);
 
-  const toHit = techToHit?.length > 0 && techToHit[0] > 0 ? techToHit[0] : unitLookup[firingBlock.name][targetUnitType];
+  const toHit = toHitTable[targetUnitType];
 
   const hits = attack(firingBlock.strength * multiplier, toHit);
   totalHits += hits;

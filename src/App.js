@@ -551,7 +551,7 @@ function App() {
   function findExample(resultData, number = 1) {
     const Aresults = groupByReduceFunction(resultData, (result) => {
       return result.forces.reduce((hash, block) => {
-        return hash + Math.pow(100, unitLookup[block.name].id) * block.strength;
+        return hash + Math.pow(24, unitLookup[block.name].id) * block.strength;
       }, 0);
     });
     const hashesSorted = Object.keys(Aresults).sort(
