@@ -12,18 +12,105 @@ export const UnitName = {
   Industry: "Industry"
 }
 
-export const Technologies = {
-  AirDefenseRadar: "Air Defense Radar",
-  HeavyBombers: "Heavy Bombers",
-  PrecisionBombsight: "Precision Bombsight",
-  Jets: "Jets",
-  NavalRadar: "Naval Radar",
-  Sonar: "Sonar",
-  HeavyTanks: "Heavy Tanks",
-  RocketArtillery: "Rocket Artillery",
-  MotorizedInfantry: "Motorized Infantry",
-  LST: "LST"
+export type Technology = {
+  name: string,
+  edition: string,
+  attackModifier?: any,
+  attackMultiplier?: any,
+  firstFire?: string
+  ignoreSeaInvasion?: boolean,
+  description?: string,
+  selectable: boolean
 }
+
+export const Technologies: Technology[] = [
+  {
+    name: "AirDefense Radar", edition: "TnT", attackMultiplier: {
+      "Air Force": {
+        "A": 2
+      }
+    }, selectable: true
+  },
+  //  { name: "Heavy Bombers", edition: "TnT" },
+  {
+    name: "Precision Bombsight", edition: "TnT", attackModifier: {
+      "Air Force": {
+        "IND": 1
+      }
+    }, selectable: true
+  },
+  { name: "Jets", edition: "TnT", firstFire: UnitName.AirForce, selectable: true },
+  { name: "Naval Radar", edition: "TnT", firstFire: UnitName.Fleet, selectable: true },
+  {
+    name: "Sonar", edition: "TnT", attackModifier: {
+      "Fleet": {
+        "S": 3
+      }
+    }, selectable: true
+  },
+  { name: "Heavy Tanks", edition: "TnT", firstFire: UnitName.Tank, selectable: true },
+  { name: "Rocket Artillery", edition: "TnT", firstFire: UnitName.Infantry, selectable: true },
+  //  { name: "Motorized Infantry", edition: "TnT" },
+  //  { name: "LST", edition: "TnT" },
+  {
+    name: "AutoCannons", edition: "CnC", attackModifier: {
+      "Fleet": {
+        "A": 2
+      },
+      "Carrier": {
+        "A": 3
+      }
+    }, selectable: true
+  },
+  { name: "AmphTracks", edition: "CnC", ignoreSeaInvasion: true, selectable: true },
+  {
+    name: "Dive Bombing", edition: "CnC", attackModifier: {
+      "Air Force": {
+        "N": 2
+      }
+    }, selectable: true
+  },
+  {
+    name: "Incendiaries", edition: "TnT", attackModifier: {
+      "Air Force": {
+        "IND": 1
+      }
+    }, selectable: true
+  },
+  {
+    name: "LongLance", edition: "CnC", attackModifier: {
+      "Fleet": {
+        "N": 4
+      }
+    }, selectable: false
+  },
+  { name: "Precision Optics", edition: "CnC", selectable: false },
+];
+export const TechLookup = {}
+Technologies.forEach(tech => TechLookup[tech.name] = tech);
+
+
+
+
+const stringToBlock = (string: string): Block => {
+  const items = string.split(":");
+
+
+  return null;
+  //@ts-ignore
+  return force(unitLookup[items[0]]?.name, items[1])[0];
+}
+
+export const blocksToString = (blocks: Block[]): string => {
+  return blocks.map(block => unitLookup[block.name].id + ":" + block.strength).join("|");
+}
+
+export const stringToBlocks = (string: string): Block[] => {
+  const blockStrings = string.split("|");
+  //@ts-ignore
+  return blockStrings.map(str => stringToBlock(str));
+}
+
 
 export const UnitClassType = {
   G: 'G',
@@ -41,11 +128,7 @@ export type Nation = {
   darkTone: string,
   maxPips: any,
   edition: string
-  specialRules?: {
-    attackPower: any,
-    precisionOptics: true,
-    kamikaze: true,
-  },
+  specialTechnologies?: string[],
   description?: string
 }
 
@@ -86,15 +169,9 @@ export const Nations: Nation[] = [
       return 3;
     },
     edition: "CnC",
-    specialRules: {
-      attackPower: {
-        "Fleet": {
-          "N": 4
-        }
-      },
-      precisionOptics: true,
-      kamikaze: true,
-    },
+    specialTechnologies: [
+      "LongLance", "Precision Optics"
+    ],
     description: "Japanese have \n- *LongLance* (Fleets fire S4)\n- *Precision Optics* (Fleets have FirstFire, if neither has Naval Radar)\n- Air Force and Carriers can *Kamikaze* (N4, then self-destruct)"
   },
   {
@@ -129,7 +206,7 @@ export type Force = {
   forces: Block[],
   attackOrder?: AttackOrder,
   reduceOrder?: string[],
-  FirstFire?: string[],
+  technologies?: string[], // technames
 }
 
 export type CombatRound = {
@@ -154,6 +231,7 @@ export const force = (type: string, strength: number, amount: number = 1): Block
 
 export type UnitTypeInfo = {
   id: number,
+  short: string,
   name: string,
   priority: number,
   class: UnitClass,
@@ -167,25 +245,29 @@ export type UnitTypeInfo = {
   special: boolean,
   preferredOrder: UnitClass[],
   canFirstFire: boolean,
+  ignoreSeaInvasion: boolean,
   TnT: boolean,
   CnC: boolean
 }
 
+
+
 var LOG = true;
 const unitData = [
-  ["id", "name", "priority", "class", "move", UnitClassType.A, UnitClassType.N, UnitClassType.G, UnitClassType.S, UnitClassType.I, "takesDouble", "special", "canFirstFire", "TnT", "CnC", "ignoreSeaInvasion"],
-  [0, UnitName.Fortress, 1, UnitClassType.G, 0, 2, 3, 4, 3, 0, false, false, false, true, true, false],
-  [1, UnitName.AirForce, 2, UnitClassType.A, "2R", 3, 1, 1, 1, 1, false, false, true, true, true, false],
-  [2, UnitName.Carrier, 3, UnitClassType.N, "3R", 2, 2, 1, 2, 0, true, false, false, true, true, false], // Carrier requires the special condition on attack and escape at A1, not yet there
-  [3, UnitName.Sub, 4, UnitClassType.S, "2R", 0, 1, 0, 1, 0, false, false, false, true, true, false],
-  [4, UnitName.Fleet, 5, UnitClassType.N, "3R", 1, 3, 1, 2, 0, false, false, true, true, true, false],
-  [5, UnitName.Tank, 6, UnitClassType.G, 3, 0, 0, 2, 0, 0, false, false, true, true, true, false],
-  [6, UnitName.Infantry, 7, UnitClassType.G, 2, 1, 1, 3, 0, 0, false, false, true, true, true, false],
-  [7, UnitName.Marine, 7, UnitClassType.G, 2, 0, 0, 2, 0, 0, false, false, false, false, true, true],
-  [8, UnitName.Militia, 7, UnitClassType.G, 2, 0, 0, 2, 0, 0, false, false, false, false, true, false],
-  [9, UnitName.Convoy, 50, UnitClassType.N, 2, 0, 0, 0, 0, 0, true, false, false, true, true, false],
-  [10, UnitName.Industry, 100, UnitClassType.I, 0, 0, 0, 0, 0, 0, false, true, false, true, true, false],
+  ["id", "short", "name", "priority", "class", "move", UnitClassType.A, UnitClassType.N, UnitClassType.G, UnitClassType.S, UnitClassType.I, "takesDouble", "special", "canFirstFire", "TnT", "CnC", "ignoreSeaInvasion"],
+  [0, "f", UnitName.Fortress, 1, UnitClassType.G, 0, 2, 3, 4, 3, 0, false, false, false, true, true, false],
+  [1, "a", UnitName.AirForce, 2, UnitClassType.A, "2R", 3, 1, 1, 1, 0, false, false, true, true, true, false],
+  [2, "c", UnitName.Carrier, 3, UnitClassType.N, "3R", 2, 2, 1, 2, 0, true, false, false, true, true, false], // Carrier requires the special condition on attack and escape at A1, not yet there
+  [3, "s", UnitName.Sub, 4, UnitClassType.S, "2R", 0, 1, 0, 1, 0, false, false, false, true, true, false],
+  [4, "F", UnitName.Fleet, 5, UnitClassType.N, "3R", 1, 3, 1, 2, 0, false, false, true, true, true, false],
+  [5, "t", UnitName.Tank, 6, UnitClassType.G, 3, 0, 0, 2, 0, 0, false, false, true, true, true, false],
+  [6, "i", UnitName.Infantry, 7, UnitClassType.G, 2, 1, 1, 3, 0, 0, false, false, true, true, true, false],
+  [7, "m", UnitName.Marine, 7, UnitClassType.G, 2, 0, 0, 2, 0, 0, false, false, false, false, true, true],
+  [8, "M", UnitName.Militia, 7, UnitClassType.G, 2, 0, 0, 2, 0, 0, false, false, false, false, true, false],
+  [9, "C", UnitName.Convoy, 50, UnitClassType.N, 2, 0, 0, 0, 0, 0, true, false, false, true, true, false],
+  [10, "I", UnitName.Industry, 100, UnitClassType.I, 0, 0, 0, 0, 0, 0, false, true, false, true, true, false],
 ];
+
 
 
 //@ts-ignore
@@ -203,6 +285,7 @@ unitData.forEach((data) => {
 
   //@ts-ignore
   unitLookup[unit.name] = unit;
+  unitLookup[unit.short] = unit;
 
   unit.preferredOrder = unitClasses.map((type) => {
     return {
@@ -253,14 +336,14 @@ function applyHits(targets: Block[], hits, targetType: UnitClass) {
 }
 
 
-function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrder) {
+function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrder, technologies: string[]) {
   const firingUnit = unitLookup[firingBlock.name];
   var order = [...attackOrder];
 
   order.splice(order.indexOf("MAX"), 1, ...firingUnit.preferredOrder);
 
   // remove units that cannot be damaged
-  order = order.filter(item => firingUnit[item] > 0);
+  //order = order.filter(item => firingUnit[item] > 0);
 
 
   //@ts-ignore
@@ -282,14 +365,28 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
 
   if (LOG) console.log("firing block nation", firingBlock.nation);
 
-  const specialRules = firingBlock.nation?.specialRules?.attackPower[firingBlock.name];
-  if (LOG) console.log("special rules", specialRules);
 
-  const toHit = specialRules && specialRules[targetUnitType] ?
-    firingBlock.nation?.specialRules.attackPower[firingBlock.name][targetUnitType] :
-    unitLookup[firingBlock.name][targetUnitType];
+  const techs: Technology[] = [];
+  if (firingBlock.nation?.specialTechnologies) techs.push(...firingBlock.nation?.specialTechnologies.map(name => TechLookup[name]));
+  if (technologies) techs.push(...technologies.map(name => TechLookup[name]));
 
-  const hits = attack(firingBlock.strength, toHit);
+  const techToHit = techs?.filter(tech =>
+    tech.attackModifier &&
+    tech.attackModifier[firingBlock.name] &&
+    tech.attackModifier[firingBlock.name][targetUnitType] !== null);
+
+  const multipliers = techs?.map(tech => {
+    if (tech.attackMultiplier === undefined) return null;
+    if (tech.attackMultiplier[firingBlock.name] === undefined) return null;
+    return tech.attackMultiplier[firingBlock.name][targetUnitType];
+  }).filter(item => item !== null);
+  const multiplier = multipliers.length > 0 && multipliers[0] > 1 ? multipliers[0] : 1;
+
+  if (LOG) console.log("applicable techs", techToHit);
+
+  const toHit = techToHit?.length > 0 && techToHit[0].attackModifier[firingBlock.name][targetUnitType] > 0 ? techToHit[0].attackModifier[firingBlock.name][targetUnitType] : unitLookup[firingBlock.name][targetUnitType];
+
+  const hits = attack(firingBlock.strength * multiplier, toHit);
   totalHits += hits;
   applyHits(targetBlocks, hits, targetUnitType);
   totalForce += firingBlock.strength;
@@ -344,18 +441,18 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
 
 
       var attackerFFs = 0;
-      if (attacker.FirstFire?.filter((item) => item === activeUnitType.name).length > 0) attackerFFs++;
+      if (attacker.technologies?.filter((item) => TechLookup[item]?.firstFire === activeUnitType.name).length > 0) attackerFFs++;
 
       var defenderFFs = 0;
-      if (defender.FirstFire?.filter((item) => item === activeUnitType.name).length > 0) defenderFFs++;
+      if (defender.technologies?.filter((item) => TechLookup[item]?.firstFire === activeUnitType.name).length > 0) defenderFFs++;
 
       var goesFirst = defender;
       var goesSecond = attacker;
 
       // if neither has FFs then give the japanese player first fire
       if (attackerFFs === 0 && defenderFFs === 0 && activeUnitType.name === UnitName.Fleet) {
-        attackerFFs += NationLookup[attacker.nationName].specialRules?.precisionOptics ? 1 : 0;
-        defenderFFs += NationLookup[defender.nationName].specialRules?.precisionOptics ? 1 : 0;
+        attackerFFs += NationLookup[attacker.nationName].specialTechnologies?.find(tech => tech === "Precision Optics") ? 1 : 0;
+        defenderFFs += NationLookup[defender.nationName].specialTechnologies?.find(tech => tech === "Precision Optics") ? 1 : 0;
       }
 
       // give DoW bonus to attacker
@@ -367,8 +464,13 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
         goesFirst = goesSecond;
         goesSecond = temp;
       }
-
-      if (round.seaInvasion && goesFirst === attacker && activeUnitType.class === "G") {
+      if (
+        round.seaInvasion &&
+        goesFirst === attacker &&
+        activeUnitType.class === "G" &&
+        !activeUnitType.ignoreSeaInvasion
+        && !(goesFirst.technologies?.filter(tech => tech === "AmphTracks").length > 0)
+      ) {
         if (LOG) console.log("Sea invasion ongoing, attacking ground units skip.")
       } else
         goesFirst.forces
@@ -377,13 +479,18 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
             fire(
               block,
               goesSecond.forces,
-              goesFirst.attackOrder
+              goesFirst.attackOrder,
+              goesFirst.technologies
             )
           );
 
-      if (round.seaInvasion && goesSecond === attacker &&
+      if (
+        round.seaInvasion &&
+        goesSecond === attacker &&
         activeUnitType.class === "G" &&
-        activeUnitType.name !== UnitName.Marine) {
+        !activeUnitType.ignoreSeaInvasion
+        && !(goesSecond.technologies?.filter(tech => tech === "AmphTracks").length > 0)
+      ) {
         if (LOG) console.log("Sea invasion ongoing, attacking ground units skip.")
       } else
         goesSecond.forces
@@ -392,7 +499,8 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
             fire(
               block,
               goesFirst.forces,
-              goesSecond.attackOrder
+              goesSecond.attackOrder,
+              goesSecond.technologies
             )
           );
     });

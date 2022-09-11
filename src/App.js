@@ -46,7 +46,8 @@ import {
   UnitClassType,
   Nations,
   NationLookup,
-  UnitName
+  UnitName,
+  Technologies,
 } from "./model/battle.ts";
 import React from "react";
 import Plot from "react-plotly.js";
@@ -118,19 +119,28 @@ const VisualizeForce = ({
   });
 };
 
-const ForceStrength = ({force}) => {
+const ForceStrength = ({ force }) => {
   const CV = force.forces
     .filter((item) => item.name !== UnitName.Industry)
     .reduce((total, item) => total + item.strength, 0);
   const IND = force.forces
     .filter((item) => item.name === UnitName.Industry)
     .reduce((total, item) => total + item.strength, 0);
-  return <>(CV {CV}{IND > 0 ? `, IND ${IND}` : ""})</>
-}
+  return (
+    <>
+      (CV {CV}
+      {IND > 0 ? `, IND ${IND}` : ""})
+    </>
+  );
+};
 
-const ForceTitle = ({force}) => {
-  return (<>{force.name} <ForceStrength force={force} /></>);
-}
+const ForceTitle = ({ force }) => {
+  return (
+    <>
+      {force.name} <ForceStrength force={force} />
+    </>
+  );
+};
 
 const validateBlocks = (force) => {
   const nation = NationLookup[force.nationName];
@@ -201,12 +211,12 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     });
   }
 
-  function addFirstFire(type) {
+  function addTechnology(tech) {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
-      if (copy.FirstFire === undefined) copy.FirstFire = [];
-      if (copy.FirstFire.indexOf(type) !== -1) return;
-      copy.FirstFire.push(type);
+      if (copy.technologies === undefined) copy.technologies = [];
+      if (copy.technologies.indexOf(tech) !== -1) return;
+      copy.technologies.push(tech);
       return copy;
     });
   }
@@ -221,12 +231,12 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     });
   }
 
-  function removeFirstFire(type) {
+  function removeTechnology(tech) {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
-      const index = copy.FirstFire.indexOf(type);
+      const index = copy.technologies.indexOf(tech);
       if (index === -1) return;
-      copy.FirstFire.splice(index, 1);
+      copy.technologies.splice(index, 1);
       return copy;
     });
   }
@@ -351,35 +361,31 @@ const ForcePanel = ({ attacker, onUpdate }) => {
         </ListItemText>
       </ListItem>
       <ListItem disablePadding key="techs">
-        <ListItemText primary="Units with FirstFire" />
+        <ListItemText primary="Technologies" />
         <FormControl size="small">
           <Select
             id="addFirstFire"
             value=""
             IconComponent={AddIcon}
-            onChange={(e) => addFirstFire(e.target.value)}
+            onChange={(e) => addTechnology(e.target.value)}
           >
-            {unitTable
-              .filter(
-                (unit) =>
-                  forceA.FirstFire === undefined ||
-                  forceA.FirstFire?.indexOf(unit.name) === -1
-              )
-              .filter((unit) => unitLookup[unit.name].canFirstFire)
-              .map((unit) => {
-                return (
-                  <MenuItem key={unit.name} value={unit.name}>
-                    {unit.name}
-                  </MenuItem>
-                );
-              })}
+            {Technologies.map((tech) => {
+              return (
+                <MenuItem key={tech.name} value={tech.name}>
+                  {tech.name}
+                </MenuItem>
+              );
+            })}
           </Select>
         </FormControl>
       </ListItem>
       <ListItem key="techList">
         <ListItemText>
-          {forceA.FirstFire?.map((val, index) => {
-            return <Chip label={val} onClick={() => removeFirstFire(val)} />;
+          {NationLookup[forceA.nationName].specialTechnologies?.map((val, index) => {
+            return <Chip disabled={true} label={val} />;
+          })}
+          {forceA.technologies?.map((val, index) => {
+            return <Chip label={val} onClick={() => removeTechnology(val)} />;
           })}
         </ListItemText>
       </ListItem>
@@ -519,7 +525,6 @@ function HelpDialogSlide() {
 }
 
 function App() {
-
   const location = window.location.search;
   if (location.match(/cnc/gi)) {
     initialAttackerTnT.nationName = "US (CnC)";
@@ -570,7 +575,6 @@ function App() {
     if (copy?.length > 0) {
       console.log(copy, value);
       copy[0].hasDoWFirstFire = value;
-      console.log(copy);
       setCombatRounds(copy);
     }
   }
@@ -736,7 +740,9 @@ function App() {
           </List>
         </ListItem>
         <Divider />
-        <ListItem key="subHeaderOutcome">Simulation results (most likely outcome)</ListItem>
+        <ListItem key="subHeaderOutcome">
+          Simulation results (most likely outcome)
+        </ListItem>
         <ListItem key="outcomes">
           <Grid container>
             <Grid item xs={6}>
@@ -745,9 +751,9 @@ function App() {
                   <ListItem key={index}>
                     <VisualizeForce attacker={res.result} canModify={false} />
                     <ListItemText>
-                    <ForceStrength force={res.result} />
-                    {" - "}
-                      {Math.round((res.count / simulations) * 1000) / 10} % 
+                      <ForceStrength force={res.result} />
+                      {" - "}
+                      {Math.round((res.count / simulations) * 1000) / 10} %
                     </ListItemText>
                   </ListItem>
                 ))}
@@ -761,7 +767,7 @@ function App() {
                     <ListItemText>
                       <ForceStrength force={res.result} />
                       {" - "}
-                      {Math.round((res.count / simulations) * 1000) / 10} % 
+                      {Math.round((res.count / simulations) * 1000) / 10} %
                     </ListItemText>
                   </ListItem>
                 ))}
