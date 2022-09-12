@@ -383,7 +383,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
             ).map((tech) => {
               return (
                 <MenuItem key={tech.name} value={tech.name}>
-                  {tech.name}
+                  {tech.name}{" "}({tech.edition})
                 </MenuItem>
               );
             })}

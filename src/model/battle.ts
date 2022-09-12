@@ -36,7 +36,7 @@ export const Technologies: Technology[] = [
     }, selectable: true
   },
   {
-    name: "AirDefense Radar", edition: "Cnc, TnT", attackMultiplier: {
+    name: "AirDefense Radar", edition: "CnC, TnT", attackMultiplier: {
       "Air Force": {
         "A": 2
       }
@@ -65,7 +65,7 @@ export const Technologies: Technology[] = [
       }
     }, selectable: true
   },
-  { name: "Jets", edition: "Cnc, TnT", firstFire: UnitName.AirForce, selectable: true },
+  { name: "Jets", edition: "CnC, TnT", firstFire: UnitName.AirForce, selectable: true },
   {
     name: "Precision Bombsight", edition: "TnT", attackModifier: {
       "Air Force": {
@@ -76,7 +76,7 @@ export const Technologies: Technology[] = [
   { name: "Naval Radar", edition: "CnC, TnT", firstFire: UnitName.Fleet, selectable: true },
   { name: "Rocket Artillery", edition: "TnT", firstFire: UnitName.Infantry, selectable: true },
   {
-    name: "Sonar", edition: "Cnc, TnT", attackModifier: {
+    name: "Sonar", edition: "CnC, TnT", attackModifier: {
       "Fleet": {
         "S": 3
       }
