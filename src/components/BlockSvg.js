@@ -67,7 +67,11 @@ const PipsElement = ({ maxPips, pipColor, edition }) => {
   );
 };
 
-export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
+export const BlockSvg = ({ id, nationLookup, nation, block, onClick, onContextMenu }) => {
+//  console.log ("Nation", nation);
+//  console.log ("NationLookup", nationLookup);
+
+  const blockNation = nation ? nation : nationLookup[block.nationName];
   if (block === null || block === undefined) {
     return (
       <svg
@@ -77,13 +81,13 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <g fill={nation.color}>
+        <g fill={blockNation.color}>
           <rect width="100" height="100" />
         </g>
         <g stroke="black" strokeWidth="1" fill="none" fillRule="evenodd">
           <rect width="100" height="100" />
         </g>
-        <g stroke="red" strokeWidth="2" fill={nation.darkTone}>
+        <g stroke="red" strokeWidth="2" fill={blockNation.darkTone}>
           <polygon points="0,0 100,100" />
           <polygon points="0,100 100,0" />
         </g>
@@ -105,7 +109,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
   const unitType = unitLookup[block.name];
   const transform = unitType.special
     ? ""
-    : `rotate(${(block.strength - nation.maxPips(block.name)) * 90},50,50)`;
+    : `rotate(${(block.strength - blockNation.maxPips(block.name)) * 90},50,50)`;
 
   var icon = null;
   var scale = 1.0;
@@ -130,7 +134,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <g transform={transform}>
-        <g fill={nation.color}>
+        <g fill={blockNation.color}>
           <rect width="100" height="100" />
         </g>
 
@@ -202,7 +206,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
             <g transform="translate(68,68),scale(0.3)" opacity="0.4">
               <g transform="rotate(-45,0,0)">
                 <image
-                  fill={nation.darkTone}
+                  fill={blockNation.darkTone}
                   x="-50"
                   y="-50"
                   width="100"
@@ -217,9 +221,9 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
         )}
 
         {block.name === UnitName.Fortress ? (
-          <g stroke="white" strokeWidth="2" fill={nation.darkTone}>
+          <g stroke="white" strokeWidth="2" fill={blockNation.darkTone}>
             <polygon
-              points="24,0 12,20.7 -12,20.7 -24,0 -12,-20.7 12,-20.7"
+              points="26.4,0 13.1,22.77 -13.1,22.77 -26.4,0 -13.1,-22.77 13.1,-22.77"
               transform="translate(50,50)"
             />
             <text
@@ -238,7 +242,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
         )}
 
         {block.name === UnitName.Infantry ? (
-          <g stroke="white" strokeWidth="2" fill={nation.darkTone}>
+          <g stroke="white" strokeWidth="2" fill={blockNation.darkTone}>
             <polygon points="23,23 23,77 77,77 77,23" />
             <polygon points="23,23 77,77" />
             <polygon points="23,77 77,23" />
@@ -249,10 +253,17 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
 
         {block.name === UnitName.Marine ? (
           <g>
-            <g stroke="white" strokeWidth="2" fill={nation.darkTone}>
-              <polygon points="23,23 23,77 77,77 77,23" />
+            <g stroke="white" strokeWidth="2" fill={blockNation.darkTone}>
+              {blockNation.name === "Japanese (CnC)" ? (
+                <polygon
+                  points="26.4,0 13.1,22.77 -13.1,22.77 -26.4,0 -13.1,-22.77 13.1,-22.77"
+                  transform="translate(50,50)"
+                />
+              ) : (
+                <polygon points="23,23 23,77 77,77 77,23" />
+              )}
             </g>
-            <g filter="invert(1)" transform={`translate(50,50),scale(0.45)`}>
+            <g transform={`translate(50,50),scale(0.40)`}>
               <image
                 fill="white"
                 x="-50"
@@ -268,7 +279,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
         )}
 
         {block.name === UnitName.Militia ? (
-          <g stroke="white" strokeWidth="2" fill={nation.darkTone}>
+          <g stroke="white" strokeWidth="2" fill={blockNation.darkTone}>
             <polygon points="23,23 23,77 77,77 77,23" />
             <polygon points="38,38 62,62" />
             <polygon points="38,62 62,38" />
@@ -278,7 +289,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
         )}
 
         {block.name === UnitName.Tank ? (
-          <g stroke="white" strokeWidth="2" fill={nation.darkTone}>
+          <g stroke="white" strokeWidth="2" fill={blockNation.darkTone}>
             <polygon points="23,23 23,77 77,77 77,23" />
             <rect x="28" y="40" width="44" height="20" rx="10" />
           </g>
@@ -288,7 +299,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
 
         {unitType.name === UnitName.Convoy ? (
           <g>
-            <g stroke="white" strokeWidth="2" fill={nation.darkTone}>
+            <g stroke="white" strokeWidth="2" fill={blockNation.darkTone}>
               <polygon points="23,23 23,77 77,77 77,23" />
             </g>
             <g transform="translate(50,50)">
@@ -312,7 +323,7 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
 
         {unitType.name === UnitName.Industry ? (
           <g>
-            <circle fill={nation.darkTone} cx={80} cy={80} r={20} />
+            <circle fill={blockNation.darkTone} cx={80} cy={80} r={20} />
             <text
               x="80"
               y="80"
@@ -326,9 +337,9 @@ export const BlockSvg = ({ id, nation, block, onClick, onContextMenu }) => {
           </g>
         ) : (
           <PipsElement
-            maxPips={nation.maxPips(unitType.name)}
-            pipColor={nation.pipColor}
-            edition={nation.edition}
+            maxPips={blockNation.maxPips(unitType.name)}
+            pipColor={blockNation.pipColor}
+            edition={blockNation.edition}
           />
         )}
       </g>

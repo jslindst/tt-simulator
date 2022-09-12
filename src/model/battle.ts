@@ -36,7 +36,7 @@ export const Technologies: Technology[] = [
     }, selectable: true
   },
   {
-    name: "AirDefense Radar", edition: "TnT", attackMultiplier: {
+    name: "AirDefense Radar", edition: "Cnc, TnT", attackMultiplier: {
       "Air Force": {
         "A": 2
       }
@@ -52,12 +52,12 @@ export const Technologies: Technology[] = [
   },
   { name: "Heavy Tanks", edition: "TnT", firstFire: UnitName.Tank, selectable: true },
   {
-    name: "Improved Torpedoes", edition: "Cnc", attackModifier: {
+    name: "Improved Torpedoes", edition: "CnC", attackModifier: {
       "Sub": {
         "N": 2
       }
     }, selectable: true
-  },  
+  },
   {
     name: "Incendiaries", edition: "CnC", attackModifier: {
       "Air Force": {
@@ -65,7 +65,7 @@ export const Technologies: Technology[] = [
       }
     }, selectable: true
   },
-  { name: "Jets", edition: "TnT", firstFire: UnitName.AirForce, selectable: true },
+  { name: "Jets", edition: "Cnc, TnT", firstFire: UnitName.AirForce, selectable: true },
   {
     name: "Precision Bombsight", edition: "TnT", attackModifier: {
       "Air Force": {
@@ -73,10 +73,10 @@ export const Technologies: Technology[] = [
       }
     }, selectable: true
   },
-  { name: "Naval Radar", edition: "TnT", firstFire: UnitName.Fleet, selectable: true },
+  { name: "Naval Radar", edition: "CnC, TnT", firstFire: UnitName.Fleet, selectable: true },
   { name: "Rocket Artillery", edition: "TnT", firstFire: UnitName.Infantry, selectable: true },
   {
-    name: "Sonar", edition: "TnT", attackModifier: {
+    name: "Sonar", edition: "Cnc, TnT", attackModifier: {
       "Fleet": {
         "S": 3
       }
@@ -97,25 +97,31 @@ export const TechLookup = {}
 Technologies.forEach(tech => TechLookup[tech.name] = tech);
 
 
-
-
 const stringToBlock = (string: string): Block => {
-  const items = string.split(":");
-
-
-  return null;
+  const nation = NationLookup[string.charAt(0)];
+  const unit = unitLookup[string.charAt(1)];
+  const strength = string.substring(2);
+  console.log("str", strength);
   //@ts-ignore
-  return force(unitLookup[items[0]]?.name, items[1])[0];
+  const block: Block = force(unit.name, nation.name, strength)[0];
+  return block;
 }
 
 export const blocksToString = (blocks: Block[]): string => {
-  return blocks.map(block => unitLookup[block.name].id + ":" + block.strength).join("|");
+  return blocks.map(block => NationLookup[block.nationName].shortName + unitLookup[block.name].shortName + block.strength).join("|");
 }
 
 export const stringToBlocks = (string: string): Block[] => {
   const blockStrings = string.split("|");
   //@ts-ignore
-  return blockStrings.map(str => stringToBlock(str));
+  return blockStrings.map(str => {
+    try {
+      return stringToBlock(str);
+    } catch (e) {
+      return null;
+    }
+  }
+  ).filter(block => block !== null);
 }
 
 
@@ -130,42 +136,62 @@ export const UnitClassType = {
 
 export type Nation = {
   name: string,
+  shortName: string,
   color: string,
   pipColor: string,
   darkTone: string,
   maxPips: any,
   edition: string
   specialTechnologies?: string[],
-  description?: string
+  description?: string,
+  units: string
 }
+
 
 export const Nations: Nation[] = [
   {
     name: "Axis",
+    shortName: "a",
     color: "rgb(162,163,162)",
     pipColor: "black",
     darkTone: "rgb(111,113,112)",
     maxPips: (unit) => 4,
     edition: "TnT",
+    units: "facsFtiCI",
+  },
+  {
+    name: "Neutral",
+    shortName: "n",
+    pipColor: "black",
+    color: "rgb(225, 137, 46)",
+    darkTone: "rgb(204, 92, 45)",
+    maxPips: (unit) => 3,
+    edition: "TnT",
+    units: "f"
   },
   {
     name: "USSR",
+    shortName: "u",
     pipColor: "white",
     color: "rgb(221,72,56)",
     darkTone: "rgb(186,39,31)",
     maxPips: unit => 3,
     edition: "TnT",
+    units: "facsFtiCI"
   },
   {
     name: "West",
+    shortName: "w",
     pipColor: "white",
     color: "rgb(30,120,171)",
     darkTone: "rgb(2, 55, 83)",
     maxPips: unit => 4,
     edition: "TnT",
+    units: "facsFtiCI"
   },
   {
     name: "Japanese (CnC)",
+    shortName: "j",
     pipColor: "white",
     color: "rgb(171,146,36)",
     darkTone: "rgb(116,94,32)",
@@ -179,27 +205,33 @@ export const Nations: Nation[] = [
     specialTechnologies: [
       "LongLance", "Precision Optics"
     ],
-    description: "Japanese have \n- *LongLance* (Fleets fire S4)\n- *Precision Optics* (Fleets have FirstFire, if neither has Naval Radar)\n- Air Force and Carriers can *Kamikaze* (N4, then self-destruct)"
+    description: "Japanese have \n- *LongLance* (Fleets fire S4)\n- *Precision Optics* (Fleets have FirstFire, if neither has Naval Radar)\n- Air Force and Carriers can *Kamikaze* (N4, then self-destruct)",
+    units: "facsFtimCI"
   },
   {
     name: "Soviets (CnC)",
+    shortName: "s",
     pipColor: "white",
     color: "rgb(222,74,54)",
     darkTone: "rgb(186,39,31)",
     maxPips: unit => 3,
     edition: "CnC",
+    units: "facsFtiMCI"
   },
   {
     name: "US (CnC)",
+    shortName: "U",
     pipColor: "white",
     color: "rgb(93,134,73)",
     darkTone: "rgb(40,93,54)",
     maxPips: unit => unit === UnitName.Marine ? 2 : 4,
     edition: "CnC",
+    units: "facsFtimMCI"
   },
 ];
 export const NationLookup = {}
 Nations.forEach(nation => NationLookup[nation.name] = nation);
+Nations.forEach(nation => NationLookup[nation.shortName] = nation);
 
 
 const unitClasses = [UnitClassType.G, UnitClassType.A, UnitClassType.N, UnitClassType.S, UnitClassType.I] as const;
@@ -225,20 +257,20 @@ export type CombatRound = {
 export type Block = {
   name: string,
   strength: number,
-  nation?: Nation
+  nationName: string
 };
 
-export const force = (type: string, strength: number, amount: number = 1): Block[] => {
+export const force = (type: string, nationName: string, strength: number, amount: number = 1): Block[] => {
   const force: Block[] = [];
   for (var i = 0; i < amount; i++) {
-    force.push({ name: type, strength: strength });
+    force.push({ name: type, strength: strength, nationName: nationName });
   }
   return force;
 }
 
 export type UnitTypeInfo = {
   id: number,
-  short: string,
+  shortName: string,
   name: string,
   priority: number,
   class: UnitClass,
@@ -261,7 +293,7 @@ export type UnitTypeInfo = {
 
 var LOG = true;
 const unitData = [
-  ["id", "short", "name", "priority", "class", "move", UnitClassType.A, UnitClassType.N, UnitClassType.G, UnitClassType.S, UnitClassType.I, "takesDouble", "special", "canFirstFire", "TnT", "CnC", "ignoreSeaInvasion"],
+  ["id", "shortName", "name", "priority", "class", "move", UnitClassType.A, UnitClassType.N, UnitClassType.G, UnitClassType.S, UnitClassType.I, "takesDouble", "special", "canFirstFire", "TnT", "CnC", "ignoreSeaInvasion"],
   [0, "f", UnitName.Fortress, 1, UnitClassType.G, 0, 2, 3, 4, 3, 0, false, false, false, true, true, false],
   [1, "a", UnitName.AirForce, 2, UnitClassType.A, "2R", 3, 1, 1, 1, 0, false, false, true, true, true, false],
   [2, "c", UnitName.Carrier, 3, UnitClassType.N, "3R", 2, 2, 1, 2, 0, true, false, false, true, true, false], // Carrier requires the special condition on attack and escape at A1, not yet there
@@ -292,7 +324,7 @@ unitData.forEach((data) => {
 
   //@ts-ignore
   unitLookup[unit.name] = unit;
-  unitLookup[unit.short] = unit;
+  unitLookup[unit.shortName] = unit;
 
   unit.preferredOrder = unitClasses.map((type) => {
     return {
@@ -345,13 +377,14 @@ function applyHits(targets: Block[], hits, targetType: UnitClass) {
 
 function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrder, technologies: string[]) {
   const firingUnit = unitLookup[firingBlock.name];
+  const firingUnitNation = NationLookup[firingBlock.nationName];
 
   const toHitTable = {}
 
-  unitClasses.forEach(unitClass => {toHitTable[unitClass] = firingUnit[unitClass]});
+  unitClasses.forEach(unitClass => { toHitTable[unitClass] = firingUnit[unitClass] });
 
   const techs: Technology[] = [];
-  if (firingBlock.nation?.specialTechnologies) techs.push(...firingBlock.nation?.specialTechnologies.map(name => TechLookup[name]));
+  if (firingUnitNation.specialTechnologies) techs.push(...firingUnitNation.specialTechnologies.map(name => TechLookup[name]));
   if (technologies) techs.push(...technologies.map(name => TechLookup[name]));
 
   techs?.forEach(tech => {
@@ -385,7 +418,7 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
   if (LOG)
     console.log(`..(${firingBlock.name},${firingBlock.strength}) firing at ${targetUnitType}`);
 
-  if (LOG) console.log("firing block nation", firingBlock.nation);
+  if (LOG) console.log("firing block nation", firingUnitNation);
 
 
   const multipliers = techs?.map(tech => {
@@ -436,8 +469,8 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
     var attacker = forceA;
     var defender = forceB;
 
-    attacker.forces.forEach(block => block.nation = NationLookup[attacker.nationName]);
-    defender.forces.forEach(block => block.nation = NationLookup[defender.nationName]);
+    //    attacker.forces.forEach(block => block.nationName = attacker.nationName);
+    //    defender.forces.forEach(block => block.nationName = defender.nationName);
 
 
 

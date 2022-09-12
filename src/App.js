@@ -48,6 +48,8 @@ import {
   NationLookup,
   UnitName,
   Technologies,
+  blocksToString,
+  stringToBlocks,
 } from "./model/battle.ts";
 import React from "react";
 import Plot from "react-plotly.js";
@@ -63,7 +65,7 @@ const initialDefenderTnT = {
     UnitClassType.S,
     UnitClassType.I,
   ],
-  forces: [...force("Infantry", 4), ...force("Infantry", 4)],
+  forces: [...force("Infantry", "Axis", 4), ...force("Infantry", "Axis", 4)],
   //forces: [...force("Fleet", 4, 2)],
   nationName: "Axis",
   //nationName: "Japanese (CnC)",
@@ -72,7 +74,7 @@ const initialDefenderTnT = {
 const initialAttackerTnT = {
   name: "BattleForce A",
   //forces: [...force("Fleet", 4, 2)],
-  forces: [...force("Tank", 3, 3)],
+  forces: [...force("Tank", "West", 3, 3)],
   attackOrder: [
     "MAX",
     UnitClassType.G,
@@ -102,7 +104,7 @@ const VisualizeForce = ({
       <BlockSvg
         id={`${nation.name}-${unit.name}-${unit.strength}`}
         key={`${index}-${nation.name}-${unit.name}-${unit.strength}`}
-        nation={nation}
+        nationLookup={NationLookup}
         block={unit}
         onClick={(e) => {
           if (!canModify) return;
@@ -150,7 +152,7 @@ const validateBlocks = (force) => {
     block.strength = Math.min(block.strength, nation.maxPips(block.name));
   });
   force.forces = force.forces.filter(
-    (unit) => unitLookup[unit.name][nation.edition] === true
+    (block) => nation.units.indexOf(unitLookup[block.name].shortName) !== -1
   );
   return force;
 };
@@ -162,7 +164,8 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       const oldNation = NationLookup[copy.nationName];
       const newNation = Nations[index];
       copy.nationName = newNation.name;
-      return validateBlocks(copy);
+      copy.forces.forEach(block => block.nationName = newNation.name);
+            return validateBlocks(copy);
     });
   }
 
@@ -201,12 +204,14 @@ const ForcePanel = ({ attacker, onUpdate }) => {
   }
   function addBlock(unitType) {
     onUpdate((old) => {
-      console.log("Add Block");
+      //      console.log("Add Block");
       const copy = JSON.parse(JSON.stringify(old));
+
+      const nation = NationLookup[copy.nationName];
       const strength = unitLookup[unitType].special
         ? 10
-        : NationLookup[copy.nationName].maxPips(unitType);
-      copy.forces.push(...force(unitType, strength));
+        : nation.maxPips(unitType);
+      copy.forces.push(...force(unitType, nation.name, strength));
       return copy;
     });
   }
@@ -333,7 +338,9 @@ const ForcePanel = ({ attacker, onUpdate }) => {
                 .filter((unit) => unit.special === false || IND === 0)
                 .filter(
                   (unit) =>
-                    unit[NationLookup[forceA.nationName].edition] === true
+                    NationLookup[forceA.nationName].units.indexOf(
+                      unit.shortName
+                    ) !== -1
                 )
                 .map((unit, index) => {
                   return (
@@ -343,9 +350,10 @@ const ForcePanel = ({ attacker, onUpdate }) => {
                           forceA.nationName
                         ].maxPips(unit.name)}`}
                         key={`index${unit.name}`}
-                        nation={NationLookup[forceA.nationName]}
+                        nationLookup={NationLookup}
                         block={{
                           name: unit.name,
+                          nationName: forceA.nationName,
                           strength: unit.special
                             ? 10
                             : NationLookup[forceA.nationName].maxPips(
@@ -369,7 +377,10 @@ const ForcePanel = ({ attacker, onUpdate }) => {
             IconComponent={AddIcon}
             onChange={(e) => addTechnology(e.target.value)}
           >
-            {Technologies.filter(tech => tech.selectable && ! forceA.technologies?.includes(tech.name)).map((tech) => {
+            {Technologies.filter(
+              (tech) =>
+                tech.selectable && !forceA.technologies?.includes(tech.name)
+            ).map((tech) => {
               return (
                 <MenuItem key={tech.name} value={tech.name}>
                   {tech.name}
@@ -381,9 +392,11 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       </ListItem>
       <ListItem key="techList">
         <ListItemText>
-          {NationLookup[forceA.nationName].specialTechnologies?.map((val, index) => {
-            return <Chip disabled={true} label={val} />;
-          })}
+          {NationLookup[forceA.nationName].specialTechnologies?.map(
+            (val, index) => {
+              return <Chip disabled={true} label={val} />;
+            }
+          )}
           {forceA.technologies?.map((val, index) => {
             return <Chip label={val} onClick={() => removeTechnology(val)} />;
           })}
@@ -525,19 +538,52 @@ function HelpDialogSlide() {
 }
 
 function App() {
-  const location = window.location.search;
-  if (location.match(/cnc/gi)) {
+  var locationString = window.location.search;
+
+  const validString = locationString.match(/^\?(cnc)?(([a-z][a-z][0-9]+\|?)+:([a-z][a-z][0-9]+\|?)+)$/i);
+
+  console.log("locstring", locationString);
+  console.log("valid", validString);
+
+  var forcesString = validString ? validString[2] : "wt3|wt3|wt3:ai4|ai4";
+
+  const AForce = stringToBlocks(forcesString.split(":")[0]);
+  const BForce = stringToBlocks(forcesString.split(":")[1]);
+
+  initialAttackerTnT.forces = AForce;
+  initialDefenderTnT.forces = BForce;
+
+
+  if (locationString.match(/cnc/gi)) {
+    locationString = locationString.replace(/cnc/gi, "");
+
     initialAttackerTnT.nationName = "US (CnC)";
     initialDefenderTnT.nationName = "Japanese (CnC)";
+
+    initialAttackerTnT.forces.forEach(block => block.nationName = initialAttackerTnT.nationName);
+    initialDefenderTnT.forces.forEach(block => block.nationName = initialDefenderTnT.nationName);
   }
   validateBlocks(initialAttackerTnT);
   validateBlocks(initialDefenderTnT);
+
+  if (initialAttackerTnT.forces.length > 0) {
+    initialAttackerTnT.nationName = initialAttackerTnT.forces[initialAttackerTnT.forces.length-1].nationName;
+  }
+
+  if (initialDefenderTnT.forces.length > 0) {
+    initialDefenderTnT.nationName = initialDefenderTnT.forces[initialDefenderTnT.forces.length-1].nationName;
+  }
+
 
   const [combatRounds, setCombatRounds] = React.useState([
     { attacker: "A", hasDoWFirstFire: false },
   ]);
   const [battleforceA, setBattleforceA] = React.useState(initialAttackerTnT);
   const [battleforceB, setBattleforceB] = React.useState(initialDefenderTnT);
+
+  const str = blocksToString(battleforceA.forces)
+  console.log(str);
+  console.log(stringToBlocks(str));
 
   const simulations = 10000;
 
@@ -569,6 +615,7 @@ function App() {
   }
   const likelyResultsForA = findExample(aResults, 5);
   const likelyResultsForB = findExample(oResults, 5);
+  //  console.log(likelyResultsForA);
 
   function setDoW(value) {
     const copy = JSON.parse(JSON.stringify(combatRounds));
@@ -615,13 +662,21 @@ function App() {
   );
 
   function updateAttacker(updateFunction) {
-    console.log("attacker update");
-    setBattleforceA((old) => updateFunction(old));
+//    console.log("attacker update");
+    setBattleforceA((old) => {
+      const updated = updateFunction(old)
+      window.history.replaceState({page:2},'Combat Simulator',`?${blocksToString(updated.forces)}:${blocksToString(battleforceB.forces)}`);
+      return updated;
+    });
   }
 
   function updateDefender(updateFunction) {
-    console.log("defender update");
-    setBattleforceB((old) => updateFunction(old));
+//    console.log("defender update");
+    setBattleforceB((old) => {
+      const updated = updateFunction(old)
+      window.history.replaceState({page:2},'Combat Simulator',`?${blocksToString(battleforceA.forces)}:${blocksToString(updated.forces)}`);
+      return updated;
+    });
   }
 
   return (
