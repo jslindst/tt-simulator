@@ -101,7 +101,6 @@ const stringToBlock = (string: string): Block => {
   const nation = NationLookup[string.charAt(0)];
   const unit = unitLookup[string.charAt(1)];
   const strength = string.substring(2);
-  console.log("str", strength);
   //@ts-ignore
   const block: Block = force(unit.name, nation.name, strength)[0];
   return block;

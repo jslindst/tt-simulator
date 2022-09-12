@@ -542,8 +542,8 @@ function App() {
 
   const validString = locationString.match(/^\?(cnc)?(([a-z][a-z][0-9]+\|?)+:([a-z][a-z][0-9]+\|?)+)$/i);
 
-  console.log("locstring", locationString);
-  console.log("valid", validString);
+//  console.log("locstring", locationString);
+//  console.log("valid", validString);
 
   var forcesString = validString ? validString[2] : "wt3|wt3|wt3:ai4|ai4";
 
@@ -581,9 +581,9 @@ function App() {
   const [battleforceA, setBattleforceA] = React.useState(initialAttackerTnT);
   const [battleforceB, setBattleforceB] = React.useState(initialDefenderTnT);
 
-  const str = blocksToString(battleforceA.forces)
-  console.log(str);
-  console.log(stringToBlocks(str));
+//  const str = blocksToString(battleforceA.forces)
+//  console.log(str);
+//  console.log(stringToBlocks(str));
 
   const simulations = 10000;
 
