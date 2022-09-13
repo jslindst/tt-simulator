@@ -14,6 +14,7 @@ export const UnitName = {
 
 export type Technology = {
   name: string,
+  shortName: string,
   edition: string,
   attackModifier?: any,
   attackMultiplier?: any,
@@ -24,8 +25,9 @@ export type Technology = {
 }
 
 export const Technologies: Technology[] = [
-  { name: "AmphTracks", edition: "CnC", ignoreSeaInvasion: true, selectable: true },
+  { name: "AmphTracks", shortName: "at", edition: "CnC", ignoreSeaInvasion: true, selectable: true },
   {
+    shortName: "ac",
     name: "AutoCannons", edition: "CnC", attackModifier: {
       Fleet: {
         "A": 2
@@ -36,6 +38,7 @@ export const Technologies: Technology[] = [
     }, selectable: true
   },
   {
+    shortName: "ar",
     name: "AirDefense Radar", edition: "CnC, TnT", attackMultiplier: {
       "Air Force": {
         "A": 2
@@ -44,14 +47,16 @@ export const Technologies: Technology[] = [
   },
   //  { name: "Heavy Bombers", edition: "TnT" },
   {
+    shortName: "db",
     name: "Dive Bombing", edition: "CnC", attackModifier: {
       "Air Force": {
         "N": 2
       }
     }, selectable: true
   },
-  { name: "Heavy Tanks", edition: "TnT", firstFire: UnitName.Tank, selectable: true },
+  { shortName: "ht", name: "Heavy Tanks", edition: "TnT", firstFire: UnitName.Tank, selectable: true },
   {
+    shortName: "it",
     name: "Improved Torpedoes", edition: "CnC", attackModifier: {
       "Sub": {
         "N": 2
@@ -59,24 +64,26 @@ export const Technologies: Technology[] = [
     }, selectable: true
   },
   {
+    shortName: "in",
     name: "Incendiaries", edition: "CnC", attackModifier: {
       "Air Force": {
         "IND": 1
       }
     }, selectable: true
   },
-  { name: "Jets", edition: "CnC, TnT", firstFire: UnitName.AirForce, selectable: true },
+  { shortName: "je", name: "Jets", edition: "CnC, TnT", firstFire: UnitName.AirForce, selectable: true },
   {
+    shortName: "pb",
     name: "Precision Bombsight", edition: "TnT", attackModifier: {
       "Air Force": {
         "IND": 1
       }
     }, selectable: true
   },
-  { name: "Naval Radar", edition: "CnC, TnT", firstFire: UnitName.Fleet, selectable: true },
-  { name: "Rocket Artillery", edition: "TnT", firstFire: UnitName.Infantry, selectable: true },
+  { shortName: "nr", name: "Naval Radar", edition: "CnC, TnT", firstFire: UnitName.Fleet, selectable: true },
+  { shortName: "ra", name: "Rocket Artillery", edition: "TnT", firstFire: UnitName.Infantry, selectable: true },
   {
-    name: "Sonar", edition: "CnC, TnT", attackModifier: {
+    shortName: "so", name: "Sonar", edition: "CnC, TnT", attackModifier: {
       "Fleet": {
         "S": 3
       }
@@ -85,22 +92,38 @@ export const Technologies: Technology[] = [
   //  { name: "Motorized Infantry", edition: "TnT" },
   //  { name: "LST", edition: "TnT" },
   {
+    shortName: "ll",
     name: "LongLance", edition: "CnC", attackModifier: {
       "Fleet": {
         "N": 4
       }
     }, selectable: false
   },
-  { name: "Precision Optics", edition: "CnC", selectable: false },
+  { shortName: "po", name: "Precision Optics", edition: "CnC", selectable: false },
 ];
 export const TechLookup = {}
 Technologies.forEach(tech => TechLookup[tech.name] = tech);
+Technologies.forEach(tech => TechLookup[tech.shortName] = tech);
 
+export const techsToString = (techs: string[]): string => {
+  return techs.filter(tech => tech !== null).map(tech => TechLookup[tech].shortName).join("|");
+}
+
+export const stringToTechs = (string: string): string[] => {
+  return string.split("|").filter(str => str !== '').map(str => {
+    try {
+      return TechLookup[str].name;
+    } catch (e) {
+      console.log(`Trying to read technology '${str}', but failed.`);
+      return null;
+    }
+  }).filter(item => item !== null);
+}
 
 const stringToBlock = (string: string): Block => {
   const nation = NationLookup[string.charAt(0)];
   const unit = unitLookup[string.charAt(1)];
-  const strength = string.substring(2);
+  const strength = Number(string.substring(2));
   //@ts-ignore
   const block: Block = force(unit.name, nation.name, strength)[0];
   return block;
@@ -242,7 +265,7 @@ export type Force = {
   name: string,
   nationName: string,
   forces: Block[],
-  attackOrder?: AttackOrder,
+  attackOrder: AttackOrder,
   reduceOrder?: string[],
   technologies?: string[], // technames
 }
@@ -346,18 +369,29 @@ function attack(strength: number, hitOn: number) {
 }
 
 function applyHits(targets: Block[], hits, targetType: UnitClass) {
+  if (LOG) console.log(`applying ${hits} hits to ${targets.map(block => block.name + ":" + block.strength).join(",")} where type is ${targetType}`);
   if (hits === 0) return;
 
   while (hits > 0) {
     const validTargets = targets.filter(
       (block) => unitLookup[block.name]?.class === targetType
     );
-    const highestPips = Math.max(...validTargets.map((target) => target.strength));
-    const highestPipTargets = validTargets.filter(
-      (target) => target.strength === highestPips
-    );
-    if (highestPipTargets.length === 0) break; // no targets available
+    if (LOG) console.log("Valid targets", validTargets);
+    if (validTargets.length === 0) {
+      if (LOG) console.log("No targets of type available.");
+      break;
+    }
 
+    const highestPips = Math.max(...validTargets.map((target) => target.strength));
+    if (LOG) console.log("Highest pips: " + highestPips);
+    
+    const highestPipTargets = validTargets.filter(
+      (target) => Number(target.strength) === highestPips
+    );
+    if (highestPipTargets.length === 0) {
+      if (LOG) console.log ("No targets available.");
+      break; // no targets available
+    }
     // iterate through all the highest pip targets
     for (var i = 0; hits > 0 && i < highestPipTargets.length; i++) {
       const unitInfo: UnitTypeInfo = unitLookup[highestPipTargets[i].name];
@@ -408,7 +442,7 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
       ) !== -1
   );
 
-  if (targetUnitType === null) {
+  if (targetUnitType === null || targetUnitType === undefined) {
     if (LOG) console.log(`No targets available for firing.`);
     return;
   }
@@ -427,17 +461,17 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
   }).filter(item => item !== null && item !== undefined);
   const multiplier = multipliers.length > 0 && multipliers[0] > 1 ? multipliers[0] : 1;
 
-
   const toHit = toHitTable[targetUnitType];
 
   const hits = attack(firingBlock.strength * multiplier, toHit);
   totalHits += hits;
+
   applyHits(targetBlocks, hits, targetUnitType);
   totalForce += firingBlock.strength;
   if (totalForce === 0) return;
   if (LOG)
     console.log(
-      `Total hits: ${totalHits}/${totalForce} against ${targetBlocks[0]}`
+      `Total hits: ${totalHits}/${totalForce} against ${targetBlocks[0].name}:${targetBlocks[0].strength}`
     );
 }
 
@@ -447,7 +481,8 @@ export const simulate = (attacker: Force, defender: Force, combatRounds: CombatR
   const aggressionResults = [];
   const defensiveResults = [];
   for (var i = 0; i < rolls; i++) {
-
+    if (i === 0) LOG = false;
+    else LOG = false;
     var results = runBattle(
       JSON.parse(JSON.stringify(attacker)),
       JSON.parse(JSON.stringify(defender)),
@@ -471,17 +506,20 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
     //    attacker.forces.forEach(block => block.nationName = attacker.nationName);
     //    defender.forces.forEach(block => block.nationName = defender.nationName);
 
-
-
     if ("B" === round.attacker) {
       defender = forceA;
       attacker = forceB;
     }
     if (LOG) console.log(`Attacker is '${attacker.name}', Defender is '${defender.name}`);
 
-
     unitTable.forEach((activeUnitType) => {
-      if (LOG) console.log(`'${activeUnitType.name}' ====== "`, activeUnitType);
+
+      if (!(
+        attacker.forces.find((block) => block?.name === activeUnitType.name) !== undefined ||
+        defender.forces.find((block) => block?.name === activeUnitType.name) !== undefined)) 
+        return;
+
+      if (LOG) console.log(`'${activeUnitType.name}' ====== "`);
 
 
       var attackerFFs = 0;
@@ -548,8 +586,8 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
             )
           );
     });
-    if (LOG) console.log(forceA);
-    if (LOG) console.log(forceB);
+    if (LOG) console.log("ForceA after round", forceA);
+    if (LOG) console.log("ForceB after round", forceB);
     /*
         if (reinforcenementsArriveEndOf[0] === i) {
           attacker.forces.push(...attackReinforcements);

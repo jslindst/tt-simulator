@@ -33,6 +33,9 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Select from "@mui/material/Select";
 import Divider from "@mui/material/Divider";
 
+//import { Nation } from "./model/HistoryTracker.ts";
+import { groupByReduceFunction } from "./utils/utils.js";
+
 import { BlockSvg } from "./components/BlockSvg";
 
 import { AttackOrderList } from "./components/AttackOrderList.js";
@@ -50,21 +53,25 @@ import {
   Technologies,
   blocksToString,
   stringToBlocks,
+  stringToTechs,
+  techsToString,
 } from "./model/battle.ts";
 import React from "react";
 import Plot from "react-plotly.js";
 import { Tooltip } from "@mui/material";
 
+const STANDARD_ATTACK_ORDER = [
+  "MAX",
+  UnitClassType.G,
+  UnitClassType.A,
+  UnitClassType.N,
+  UnitClassType.S,
+  UnitClassType.I,
+];
+
 const initialDefenderTnT = {
   name: "BattleForce B",
-  attackOrder: [
-    "MAX",
-    UnitClassType.G,
-    UnitClassType.A,
-    UnitClassType.N,
-    UnitClassType.S,
-    UnitClassType.I,
-  ],
+  attackOrder: [...STANDARD_ATTACK_ORDER],
   forces: [...force("Infantry", "Axis", 4), ...force("Infantry", "Axis", 4)],
   //forces: [...force("Fleet", 4, 2)],
   nationName: "Axis",
@@ -75,14 +82,7 @@ const initialAttackerTnT = {
   name: "BattleForce A",
   //forces: [...force("Fleet", 4, 2)],
   forces: [...force("Tank", "West", 3, 3)],
-  attackOrder: [
-    "MAX",
-    UnitClassType.G,
-    UnitClassType.A,
-    UnitClassType.N,
-    UnitClassType.S,
-    UnitClassType.I,
-  ],
+  attackOrder: [...STANDARD_ATTACK_ORDER],
   reduceOrder: ["Tank", "Infantry", "Fortress", "Fleet", "Carrier", "Convoy"],
   DoW: false,
   nationName: "West",
@@ -131,7 +131,7 @@ const ForceStrength = ({ force }) => {
   return (
     <>
       (CV {CV}
-      {IND > 0 ? `, IND ${IND}` : ""})
+      {IND > 0 ? `, IND ${Number(IND)}` : ""})
     </>
   );
 };
@@ -164,8 +164,8 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       const oldNation = NationLookup[copy.nationName];
       const newNation = Nations[index];
       copy.nationName = newNation.name;
-      copy.forces.forEach(block => block.nationName = newNation.name);
-            return validateBlocks(copy);
+      copy.forces.forEach((block) => (block.nationName = newNation.name));
+      return validateBlocks(copy);
     });
   }
 
@@ -204,7 +204,6 @@ const ForcePanel = ({ attacker, onUpdate }) => {
   }
   function addBlock(unitType) {
     onUpdate((old) => {
-      //      console.log("Add Block");
       const copy = JSON.parse(JSON.stringify(old));
 
       const nation = NationLookup[copy.nationName];
@@ -228,10 +227,8 @@ const ForcePanel = ({ attacker, onUpdate }) => {
 
   function updateAttackOrder(order) {
     onUpdate((old) => {
-      console.log("Updated order", order);
       const copy = JSON.parse(JSON.stringify(old));
       copy.attackOrder = order;
-      console.log(copy);
       return copy;
     });
   }
@@ -383,7 +380,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
             ).map((tech) => {
               return (
                 <MenuItem key={tech.name} value={tech.name}>
-                  {tech.name}{" "}({tech.edition})
+                  {tech.name} ({tech.edition})
                 </MenuItem>
               );
             })}
@@ -412,18 +409,6 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       </ListItem>
     </List>
   );
-};
-
-export const groupByReduceFunction = (data, lambda) => {
-  if (data === undefined) return [];
-  // @ts-ignore
-  return data.reduce((group, item) => {
-    if (item === undefined) return group;
-    var property = lambda(item);
-    group[property] = group[property] ?? [];
-    group[property].push(item);
-    return group;
-  }, {});
 };
 
 const Transition = React.forwardRef(function Transition(props, ref) {
@@ -540,19 +525,85 @@ function HelpDialogSlide() {
 function App() {
   var locationString = window.location.search;
 
-  const validString = locationString.match(/^\?(cnc)?(([a-z][a-z][0-9]+\|?)+:([a-z][a-z][0-9]+\|?)+)$/i);
+  const validString = locationString.match(
+    /^\?(cnc)?([a-z0-9|!]*):([a-z0-9|!]*)(:[a-z]*)?$/i
+  );
 
-//  console.log("locstring", locationString);
 //  console.log("valid", validString);
 
-  var forcesString = validString ? validString[2] : "wt3|wt3|wt3:ai4|ai4";
+  const AForceString = validString ? validString[2] : "!wt3|wt3!012345";
+  const BForceString = validString ? validString[3] : "!ai4|ai2!012345";
 
-  const AForce = stringToBlocks(forcesString.split(":")[0]);
-  const BForce = stringToBlocks(forcesString.split(":")[1]);
+  const initializeFromString = (string, force) => {
+    try {
+      const split = string.split("!");
+      if (split.length < 2 || split.length > 3) {
+        initializeFromString("!wt3|wt3!012345", force);
+        return;
+      }
+      const techString = split[0];
+      const forceString = split[1];
+      const orderString = split.length >= 3 ? split[2] : "";
+      force.forces = stringToBlocks(forceString);
+      force.technologies = stringToTechs(techString);
 
-  initialAttackerTnT.forces = AForce;
-  initialDefenderTnT.forces = BForce;
+      const newOrderIdx = orderString.replace(/[^0-5]/gi, "").split("");
+      newOrderIdx.push(...STANDARD_ATTACK_ORDER.map((item, idx) => "" + idx));
+      force.attackOrder = newOrderIdx
+        .filter(function (item, pos) {
+          return newOrderIdx.indexOf(item) === pos;
+        })
+        .map((idx) => STANDARD_ATTACK_ORDER[idx]);
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
+  const formatForceString = (force) => {
+    return (
+      techsToString(force.technologies) +
+      "!" +
+      blocksToString(force.forces) +
+      "!" +
+      force.attackOrder
+        ?.map((order) => STANDARD_ATTACK_ORDER.indexOf(order))
+        .join("")
+    );
+  };
+
+  initializeFromString(AForceString, initialAttackerTnT);
+  initializeFromString(BForceString, initialDefenderTnT);
+
+  const initialCombatRounds = [];
+  
+  const formatCombatRoundsString = (combatRounds) => {
+    return combatRounds.map((round) => {
+      return round.attacker + (round.hasDoWFirstFire ? "d" : "x") + (round.seaInvasion ? "s" : "n");
+    }).join("");
+  };
+
+  const initializeCombatRoundsFromString = (
+    combatRoundsString,
+    initialCombatRounds
+  ) => {
+    const matches = combatRoundsString.match(/([AB][dx][sn]){1}/g);
+    if (!matches) return;
+
+    initialCombatRounds.push(
+      ...matches.map((round) => {
+        const item = {
+          attacker: round.charAt(0),
+          hasDoWFirstFire: round.charAt(1) === "d",
+          seaInvasion: round.charAt(2) === "s",
+        };
+        return item;
+      })
+    );
+  };
+
+  initializeCombatRoundsFromString(validString && validString.length > 3 ? validString[4] : "Axn", 
+    initialCombatRounds
+  );
 
   if (locationString.match(/cnc/gi)) {
     locationString = locationString.replace(/cnc/gi, "");
@@ -560,30 +611,37 @@ function App() {
     initialAttackerTnT.nationName = "US (CnC)";
     initialDefenderTnT.nationName = "Japanese (CnC)";
 
-    initialAttackerTnT.forces.forEach(block => block.nationName = initialAttackerTnT.nationName);
-    initialDefenderTnT.forces.forEach(block => block.nationName = initialDefenderTnT.nationName);
+    initialAttackerTnT.forces.forEach(
+      (block) => (block.nationName = initialAttackerTnT.nationName)
+    );
+    initialDefenderTnT.forces.forEach(
+      (block) => (block.nationName = initialDefenderTnT.nationName)
+    );
   }
   validateBlocks(initialAttackerTnT);
   validateBlocks(initialDefenderTnT);
 
   if (initialAttackerTnT.forces.length > 0) {
-    initialAttackerTnT.nationName = initialAttackerTnT.forces[initialAttackerTnT.forces.length-1].nationName;
+    initialAttackerTnT.nationName =
+      initialAttackerTnT.forces[
+        initialAttackerTnT.forces.length - 1
+      ].nationName;
   }
 
   if (initialDefenderTnT.forces.length > 0) {
-    initialDefenderTnT.nationName = initialDefenderTnT.forces[initialDefenderTnT.forces.length-1].nationName;
+    initialDefenderTnT.nationName =
+      initialDefenderTnT.forces[
+        initialDefenderTnT.forces.length - 1
+      ].nationName;
   }
 
-
-  const [combatRounds, setCombatRounds] = React.useState([
-    { attacker: "A", hasDoWFirstFire: false },
-  ]);
+  const [combatRounds, setCombatRounds] = React.useState(initialCombatRounds);
   const [battleforceA, setBattleforceA] = React.useState(initialAttackerTnT);
   const [battleforceB, setBattleforceB] = React.useState(initialDefenderTnT);
 
-//  const str = blocksToString(battleforceA.forces)
-//  console.log(str);
-//  console.log(stringToBlocks(str));
+  //  const str = blocksToString(battleforceA.forces)
+  //  console.log(str);
+  //  console.log(stringToBlocks(str));
 
   const simulations = 10000;
 
@@ -617,12 +675,23 @@ function App() {
   const likelyResultsForB = findExample(oResults, 5);
   //  console.log(likelyResultsForA);
 
+
+  const updateURL = ({ updateAttacker = battleforceA, updateDefender = battleforceB, updateRounds = combatRounds }) => {
+//    console.log("Updating URL ", updateAttacker, updateDefender);
+    window.history.replaceState(
+      { page: 2 },
+      "Combat Simulator",
+      `?${formatForceString(updateAttacker)}:${formatForceString(updateDefender)}:${formatCombatRoundsString(updateRounds)}`
+    );
+  }
+
   function setDoW(value) {
     const copy = JSON.parse(JSON.stringify(combatRounds));
     if (copy?.length > 0) {
-      console.log(copy, value);
+  //    console.log(copy, value);
       copy[0].hasDoWFirstFire = value;
       setCombatRounds(copy);
+      updateURL({ updateRounds: copy });
     }
   }
 
@@ -630,24 +699,28 @@ function App() {
     const copy = JSON.parse(JSON.stringify(combatRounds));
     copy[index].seaInvasion = value;
     setCombatRounds(copy);
+    updateURL({ updateRounds: copy });
   }
 
   function removeCombatRound(index) {
     const copy = JSON.parse(JSON.stringify(combatRounds));
     copy.splice(index, 1);
     setCombatRounds(copy);
+    updateURL({ updateRounds: copy });
   }
 
   function addCombatRound() {
     const copy = JSON.parse(JSON.stringify(combatRounds));
     copy.push({ attacker: "A" });
     setCombatRounds(copy);
+    updateURL({ updateRounds: copy });
   }
 
   function setCombatRoundAttacker(index, attacker) {
     const copy = JSON.parse(JSON.stringify(combatRounds));
     copy[index].attacker = attacker;
     setCombatRounds(copy);
+    updateURL({ updateRounds: copy });
   }
 
   const remainingAggressor = aResults.map((result) =>
@@ -662,19 +735,17 @@ function App() {
   );
 
   function updateAttacker(updateFunction) {
-//    console.log("attacker update");
     setBattleforceA((old) => {
-      const updated = updateFunction(old)
-      window.history.replaceState({page:2},'Combat Simulator',`?${blocksToString(updated.forces)}:${blocksToString(battleforceB.forces)}`);
+      const updated = updateFunction(old);
+      updateURL({ updateAttacker: updated });
       return updated;
     });
   }
 
   function updateDefender(updateFunction) {
-//    console.log("defender update");
     setBattleforceB((old) => {
-      const updated = updateFunction(old)
-      window.history.replaceState({page:2},'Combat Simulator',`?${blocksToString(battleforceA.forces)}:${blocksToString(updated.forces)}`);
+      const updated = updateFunction(old);
+      updateURL({ updateDefender: updated });
       return updated;
     });
   }
