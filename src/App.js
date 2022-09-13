@@ -757,7 +757,7 @@ function App() {
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               Tragedy &amp; Triumph / Conquest &amp; Consequence - Combat
-              Simulator v1.11
+              Simulator v1.12
             </Typography>
             <HelpDialogSlide />
           </Toolbar>
