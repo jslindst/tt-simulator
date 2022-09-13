@@ -469,8 +469,7 @@ function HelpDialogSlide() {
             success.
             <b>Units will skip priorities which they cannot hit.</b> (ie. Tanks
             will not try to fire at Air Force even when A is the left most
-            (highest) priority. <b>IND</b> is industry, Air Force is assumed to
-            have <b>Precision Bombsight</b> tech.
+            (highest) priority. <b>IND</b> is industry.
           </p>
 
           <p>
