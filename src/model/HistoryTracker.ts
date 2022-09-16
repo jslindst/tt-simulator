@@ -1,4 +1,47 @@
 import { groupByReduceFunction } from "../utils/utils.js";
+//@ts-ignore
+import { Nations } from "./battle.ts";
+
+const countryNameToAcronym = {
+  "Canada": { name: "CA", color: 'rgb(29,176,223)' },
+  "USA": { name: "US", color: 'rgb(136,190,128)' },
+  "Latin America": { name: "LA", color: 'rgb(191,169,125)' },
+  "Portugal": { name: "PT", color: 'rgb(230,189,143)' },
+  "Denmark": { name: "DK", color: 'rgb(192,157,80)' },
+  "Ireland": { name: "IE", color: 'rgb(226, 190, 148)' },
+  "Britain": { name: "GB", color: 'rgb(29, 176, 223)' },
+  "France": { name: "FR", color: 'rgb(82,193,198)' },
+  "Spain": { name: "ES", color: 'rgb(226,203,101)' },
+  "French North Africa": { name: "FR-NA", color: 'rgb(178,220,223)' },
+  "Norway": { name: "NO", color: 'rgb(191,169,122)' },
+  "Sweden": { name: "SE", color: 'rgb(230,189,143)' },
+  "Finland": { name: "FI", color: 'rgb(217,167,96)' },
+  "Baltic States": { name: "BS", color: 'rgb(230,189,143)' },
+  "Low Countries": { name: "LC", color: 'rgb(243,176,92)' },
+  "Germany": { name: "DE", color: 'rgb(175,174,177)' },
+  "Poland": { name: "PL", color: 'rgb(226,203,101)' },
+  "Czechoslovakia": { name: "CZ", color: 'rgb(189,169,127)' },
+  "Austria": { name: "AT", color: 'rgb(217,168,100)' },
+  "Hungary": { name: "HU", color: 'rgb(230,189,143)' },
+  "Rumania": { name: "RO", color: 'rgb(218,168,95)' },
+  "Yugoslavia": { name: "YU", color: 'rgb(189,170,125)' },
+  "Bulgaria": { name: "BG", color: 'rgb(230,189,143)' },
+  "Albania": { name: "AL", color: 'rgb(229,190,143)' },
+  "Greece": { name: "GR", color: 'rgb(217,167,96)' },
+  "Italy": { name: "IT", color: 'rgb(166,165,145)' },
+  "Gibraltar": { name: "GIB", color: 'rgb(124,185,210)' },
+  "Malta": { name: "MT", color: 'rgb(123,184,218)' },
+  "Libya": { name: "LY", color: 'rgb(200,198,181)' },
+  "USSR": { name: "USSR", color: 'rgb(249,133,131)' },
+  "Turkey": { name: "TR", color: 'rgb(226,203,103)' },
+  "Persia": { name: "PER", color: 'rgb(229,189,145)' },
+  "Afghanistan": { name: "AF", color: 'rgb(189,170,125)' },
+  "India": { name: "IN", color: 'rgb(144,203,230)' },
+  "Syria": { name: "SY", color: 'rgb(177,221,221)' },
+  "Middle East": { name: "ME", color: 'rgb(144,203,230)' },
+}
+
+
 
 export type LandArea = {
   name: string,
@@ -18,21 +61,34 @@ class Faction {
 
   name: string;
   IND: number;
+  color: string;
+  maxPips: any;
 
   constructor(obj) {
     Object.assign(this, obj);
+    this.maxPips = undefined;
+  }
+
+  territoriesForResources(): Territory[] {
+    return territoryList.filter(area => area.resourcesForFaction() === this);
   }
 
   POP(): number {
-    return territoryList.filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
+    return this.territoriesForResources().reduce((val, area) => {
       return val = val + area.POP;
     }, 0);
   }
 
   RES(): number {
-    return territoryList.filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
-      return val = val + area.RES + area.RESTransAfrica;
+    return this.territoriesForResources().filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
+      return val = val + area.RES;
     }, 0)
+  }
+
+  RESTransAfrica(): number {
+    return this.territoriesForResources().filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
+      return val = val + area.RESTransAfrica;
+    }, 0);
   }
 
   toString(): string {
@@ -41,63 +97,63 @@ class Faction {
 
 }
 
-const factions = {
-  Axis: new Faction({ name: "Axis", IND: 12 }),
-  West: new Faction({ name: "West", IND: 7 }),
-  USSR: new Faction({ name: "USSR", IND: 9 }),
-
+export const factions = {
+  Axis: new Faction(Nations[0]),
+  West: new Faction(Nations[3]),
+  USSR: new Faction(Nations[2]),
+  Neutral: new Faction(Nations[1])
 }
 
 const LandAreaData = [
   ["StartFaction", "Nation", "name", "CityType", "Capital", "Type", "RES", "RESTransAfrica", "POP", "Muster", "CardName", "NumberOfCards"],
   ["West", "Canada", "Ottawa", "Town", true, "HomeTerritory", 1, 0, 0, 1, "", 0],
-  ["", "USA", "New York", "City", false, "USA", 2, 0, 1, 2, "", 0],
-  ["", "USA", "Washington", "SubCapital", true, "USA", 2, 0, 2, 0, "USA", 5],
-  ["", "Latin America", "Rio de Janeiro", "Town", true, "MinorNation", 2, 0, 0, 1, "", 0],
-  ["", "Portugal", "Azores", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Portugal", "Lisbon", "Town", true, "MinorNation", 1, 0, 0, 1, "Portugal", 3],
-  ["", "Denmark", "Iceland", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Denmark", "Copenhagen", "Town", true, "MinorNation", 1, 0, 0, 1, "Denmark", 3],
-  ["", "Ireland", "Dublin", "Town", true, "MinorNation", 0, 0, 0, 1, "", 0],
+  ["Neutral", "USA", "New York", "City", false, "USA", 2, 0, 1, 2, "", 0],
+  ["Neutral", "USA", "Washington", "SubCapital", true, "USA", 2, 0, 2, 0, "USA", 5],
+  ["Neutral", "Latin America", "Rio de Janeiro", "Town", true, "MinorNation", 2, 0, 0, 1, "", 0],
+  ["Neutral", "Portugal", "Azores", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Portugal", "Lisbon", "Town", true, "MinorNation", 1, 0, 0, 1, "Portugal", 3],
+  ["Neutral", "Denmark", "Iceland", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Denmark", "Copenhagen", "Town", true, "MinorNation", 1, 0, 0, 1, "Denmark", 3],
+  ["Neutral", "Ireland", "Dublin", "Town", true, "MinorNation", 0, 0, 0, 1, "", 0],
   ["West", "Britain", "London", "MainCapital", true, "HomeTerritory", 1, 0, 3, 0, "", 0],
   ["West", "Britain", "Glasgow", "City", false, "HomeTerritory", 1, 0, 1, 2, "", 0],
   ["West", "France", "Paris", "SubCapital", true, "HomeTerritory", 0, 0, 2, 0, "", 0],
   ["West", "France", "Lorraine", "-", false, "HomeTerritory", 2, 0, 0, 0, "", 0],
   ["West", "France", "Gascony", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
   ["West", "France", "Marseille", "City", false, "HomeTerritory", 0, 0, 1, 2, "", 0],
-  ["", "Spain", "Leon", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Spain", "Madrid", "Capital City", true, "MinorNation", 0, 0, 1, 3, "Spain", 4],
-  ["", "Spain", "Barcelona", "City", false, "MinorNation", 0, 0, 1, 2, "", 0],
-  ["", "French North Africa", "Dakar", "-", false, "Colony", 0, 0, 0, 0, "", 0],
-  ["", "French North Africa", "Morocco", "-", false, "Colony", 0, 0, 0, 0, "", 0],
-  ["", "French North Africa", "Algiers", "City", true, "Colony", 0, 0, 1, 2, "", 0],
-  ["", "French North Africa", "Tunisia", "-", false, "Colony", 0, 0, 0, 0, "", 0],
-  ["", "French North Africa", "Sfax", "-", false, "Colony", 0, 0, 0, 0, "", 0],
-  ["", "Norway", "Oslo", "Town", true, "MinorNation", 1, 0, 0, 1, "Norway", 3],
-  ["", "Norway", "Narvik", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Sweden", "Gallilvare", "-", false, "MinorNation", 1, 0, 0, 0, "", 0],
-  ["", "Sweden", "Stockholm", "City", true, "MinorNation", 1, 0, 1, 2, "Sweden", 3],
-  ["", "Finland", "Petsamo", "-", false, "MinorNation", 1, 0, 0, 0, "", 0],
-  ["", "Finland", "Helsinki", "Town", true, "MinorNation", 0, 0, 0, 1, "Finland", 4],
-  ["", "Baltic States", "Riga", "Town", true, "MinorNation", 0, 0, 0, 1, "Baltic States", 2],
-  ["", "Low Countries", "Amsterdam", "City", true, "MinorNation", 0, 0, 1, 2, "Low Countries", 4],
+  ["Neutral", "Spain", "Leon", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Spain", "Madrid", "Capital City", true, "MinorNation", 0, 0, 1, 3, "Spain", 4],
+  ["Neutral", "Spain", "Barcelona", "City", false, "MinorNation", 0, 0, 1, 2, "", 0],
+  ["West", "French North Africa", "Dakar", "-", false, "Colony", 0, 0, 0, 0, "", 0],
+  ["West", "French North Africa", "Morocco", "-", false, "Colony", 0, 0, 0, 0, "", 0],
+  ["West", "French North Africa", "Algiers", "City", true, "Colony", 0, 0, 1, 2, "", 0],
+  ["West", "French North Africa", "Tunisia", "-", false, "Colony", 0, 0, 0, 0, "", 0],
+  ["West", "French North Africa", "Sfax", "-", false, "Colony", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Norway", "Oslo", "Town", true, "MinorNation", 1, 0, 0, 1, "Norway", 3],
+  ["Neutral", "Norway", "Narvik", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Sweden", "Gallilvare", "-", false, "MinorNation", 1, 0, 0, 0, "", 0],
+  ["Neutral", "Sweden", "Stockholm", "City", true, "MinorNation", 1, 0, 1, 2, "Sweden", 3],
+  ["Neutral", "Finland", "Petsamo", "-", false, "MinorNation", 1, 0, 0, 0, "", 0],
+  ["Neutral", "Finland", "Helsinki", "Town", true, "MinorNation", 0, 0, 0, 1, "Finland", 4],
+  ["Neutral", "Baltic States", "Riga", "Town", true, "MinorNation", 0, 0, 0, 1, "Baltic States", 2],
+  ["Neutral", "Low Countries", "Amsterdam", "City", true, "MinorNation", 0, 0, 1, 2, "Low Countries", 4],
   ["Axis", "Germany", "Ruhr", "SubCapital", false, "HomeTerritory", 3, 0, 2, 0, "", 0],
   ["Axis", "Germany", "Berlin", "MainCapital", true, "HomeTerritory", 1, 0, 3, 0, "", 0],
   ["Axis", "Germany", "Munich", "City", false, "HomeTerritory", 0, 0, 1, 2, "", 0],
   ["Axis", "Germany", "Königsberg", "City", false, "HomeTerritory", 0, 0, 1, 2, "", 0],
-  ["", "Poland", "Warsaw", "Capital City", true, "MinorNation", 1, 0, 1, 3, "Poland", 3],
-  ["", "Poland", "Vilna", "Town", false, "MinorNation", 0, 0, 0, 1, "", 0],
-  ["", "Poland", "Lvov", "City", false, "MinorNation", 0, 0, 1, 2, "", 0],
-  ["", "Czechoslovakia", "Prague", "City", true, "MinorNation", 0, 0, 1, 2, "Czechoslovakia", 6],
-  ["", "Austria", "Vienna", "City", true, "MinorNation", 0, 0, 1, 2, "Austria", 6],
-  ["", "Hungary", "Budapest", "City", true, "MinorNation", 1, 0, 1, 2, "Hungary", 6],
-  ["", "Rumania", "Bucharest", "City", true, "MinorNation", 2, 0, 1, 2, "Rumania", 5],
-  ["", "Yugoslavia", "Croatia", "-", false, "MinorNation", 1, 0, 0, 0, "", 0],
-  ["", "Yugoslavia", "Belgrade", "Town", true, "MinorNation", 0, 0, 0, 1, "Yugoslavia", 6],
-  ["", "Bulgaria", "Sofia", "Town", true, "MinorNation", 1, 0, 0, 1, "Bulgaria", 4],
-  ["", "Albania", "", "-", true, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Greece", "Athens", "Town", true, "MinorNation", 1, 0, 0, 1, "", 0],
-  ["", "Greece", "Crete", "-", false, "MinorNation", 0, 0, 0, 0, "Greece", 6],
+  ["Neutral", "Poland", "Warsaw", "Capital City", true, "MinorNation", 1, 0, 1, 3, "Poland", 3],
+  ["Neutral", "Poland", "Vilna", "Town", false, "MinorNation", 0, 0, 0, 1, "", 0],
+  ["Neutral", "Poland", "Lvov", "City", false, "MinorNation", 0, 0, 1, 2, "", 0],
+  ["Neutral", "Czechoslovakia", "Prague", "City", true, "MinorNation", 0, 0, 1, 2, "Czechoslovakia", 6],
+  ["Neutral", "Austria", "Vienna", "City", true, "MinorNation", 0, 0, 1, 2, "Austria", 6],
+  ["Neutral", "Hungary", "Budapest", "City", true, "MinorNation", 1, 0, 1, 2, "Hungary", 6],
+  ["Neutral", "Rumania", "Bucharest", "City", true, "MinorNation", 2, 0, 1, 2, "Rumania", 5],
+  ["Neutral", "Yugoslavia", "Croatia", "-", false, "MinorNation", 1, 0, 0, 0, "", 0],
+  ["Neutral", "Yugoslavia", "Belgrade", "Town", true, "MinorNation", 0, 0, 0, 1, "Yugoslavia", 6],
+  ["Neutral", "Bulgaria", "Sofia", "Town", true, "MinorNation", 1, 0, 0, 1, "Bulgaria", 4],
+  ["Neutral", "Albania", "Albania", "-", true, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Greece", "Athens", "Town", true, "MinorNation", 1, 0, 0, 1, "", 0],
+  ["Neutral", "Greece", "Crete", "-", false, "MinorNation", 0, 0, 0, 0, "Greece", 6],
   ["Axis", "Italy", "Milan", "City", false, "HomeTerritory", 1, 0, 1, 2, "", 0],
   ["Axis", "Italy", "Venice", "-", false, "HomeTerritory", 1, 0, 0, 0, "", 0],
   ["Axis", "Italy", "Rome", "SubCapital", true, "HomeTerritory", 0, 0, 2, 0, "", 0],
@@ -127,22 +183,23 @@ const LandAreaData = [
   ["USSR", "USSR", "Odessa", "City", false, "HomeTerritory", 2, 0, 1, 2, "", 0],
   ["USSR", "USSR", "Kharkov", "City", false, "HomeTerritory", 1, 0, 1, 2, "", 0],
   ["USSR", "USSR", "Stalingrad", "City", false, "HomeTerritory", 0, 0, 1, 2, "", 0],
+  ["USSR", "USSR", "Sevastopol", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
   ["USSR", "USSR", "Kuban", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
   ["USSR", "USSR", "Grozny", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
   ["USSR", "USSR", "Georgia", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
   ["USSR", "USSR", "Baku", "SubCapital", false, "HomeTerritory", 3, 1, 2, 0, "", 0],
   ["USSR", "USSR", "Turkmenistan", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["", "Turkey", "Istanbul", "City", false, "MinorNation", 0, 0, 1, 2, "Turkey", 3],
-  ["", "Turkey", "Izmir", "Town", false, "MinorNation", 1, 0, 0, 1, "", 0],
-  ["", "Turkey", "Ankara", "Capital City", true, "MinorNation", 0, 0, 1, 3, "", 0],
-  ["", "Turkey", "Sinope", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Turkey", "Adana", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Turkey", "Kars", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Persia", "Tabriz", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Persia", "Tehran", "City", true, "MinorNation", 0, 0, 1, 2, "Persia", 2],
-  ["", "Persia", "Abadan", "-", false, "MinorNation", 2, 2, 0, 0, "", 0],
-  ["", "Persia", "Shiraz", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["", "Afghanistan", "Kabul", "Town", true, "MinorNation", 0, 0, 0, 1, "Afghanistan", 3],
+  ["Neutral", "Turkey", "Istanbul", "City", false, "MinorNation", 0, 0, 1, 2, "Turkey", 3],
+  ["Neutral", "Turkey", "Izmir", "Town", false, "MinorNation", 1, 0, 0, 1, "", 0],
+  ["Neutral", "Turkey", "Ankara", "Capital City", true, "MinorNation", 0, 0, 1, 3, "", 0],
+  ["Neutral", "Turkey", "Sinope", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Turkey", "Adana", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Turkey", "Kars", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Persia", "Tabriz", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Persia", "Tehran", "City", true, "MinorNation", 0, 0, 1, 2, "Persia", 2],
+  ["Neutral", "Persia", "Abadan", "-", false, "MinorNation", 2, 2, 0, 0, "", 0],
+  ["Neutral", "Persia", "Shiraz", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
+  ["Neutral", "Afghanistan", "Kabul", "Town", true, "MinorNation", 0, 0, 0, 1, "Afghanistan", 3],
   ["West", "India", "Karachi", "-", false, "Colony", 0, 0, 0, 0, "", 0],
   ["West", "India", "Delhi", "SubCapital", true, "Colony", 1, 1, 2, 0, "", 0],
   ["West", "India", "Bombay", "City", false, "Colony", 1, 1, 1, 2, "", 0],
@@ -173,42 +230,91 @@ LandAreaData.forEach((data) => {
   landAreaTable.push(area);
 });
 
-class Territory {
+export class Territory {
+  id: string;
   name: string;
-  occupier: Faction;
+  controller: Faction;
   nation: Nation;
   RES: number;
   RESTransAfrica;
   POP: number;
+  CityType: string;
+  StartFaction: string;
 
   constructor(obj: LandArea, nation: Nation) {
     Object.assign(this, obj);
-    this.nation = nation;
+    if (nation !== null && nation !== undefined) this.nation = nation;
   }
 
-  resourcesForFaction(): Faction {
-    if (this.isOccupied()) return this.occupier;
+  resourcesDefaultFaction(): Faction {
     return this.nation.resourcesForFaction();
   }
 
-  isOccupied(): boolean {
-    return this.occupier !== null && this.occupier !== undefined;
+  resourcesForFaction(): Faction {
+    if (this.isOccupied()) return this.controller;
+    return this.resourcesDefaultFaction();
   }
 
+  isMainCapital(): boolean {
+    return this.CityType === "MainCapital";
+  }
+
+  isSubCapital(): boolean {
+    return this.CityType === "SubCapital";
+  }
+
+  isCapital(): boolean {
+    return this.nation.capital.id === this.id;
+  }
+
+  isOccupied(): boolean {
+    return this.controller !== null && this.controller !== undefined && this.controller !== factions.Neutral;
+  }
+
+  occupy(faction: Faction) {
+    this.controller = faction;
+  }
+
+  startingFaction(): Faction {
+    return factions[this.StartFaction];
+  }
+
+  hasResources() {
+    return (this.RES + this.RESTransAfrica + this.POP) > 0;
+  }
+
+  isNeutral() {
+    return this.nation.isNeutral();
+  }
+
+  toString() {
+    return `${this.name} (${this.nation.shortName}${this.isCapital() ? '*' : ''}) RES: ${this.RES + this.RESTransAfrica} (${this.RES}+${this.RESTransAfrica}), POP: ${this.POP}`;
+  }
 }
 
-class Nation {
+export class Nation {
   name: string;
+  shortName: string;
+  color: string;
   territories: Territory[];
   capital: Territory;
   influence: Faction[] = [];
 
   constructor(name: string, territories: LandArea[]) {
     this.name = name;
+    this.shortName = countryNameToAcronym[name].name;
+    this.color = countryNameToAcronym[name].color;
+    if (this.shortName === null || this.shortName === undefined) throw new Error(`No acronym found for ${this.name}`);
     this.territories = territories.map(area => new Territory(area, this));
     //@ts-ignore
     this.capital = this.territories.find(area => area.Capital);
     if (this.capital === null || this.capital === undefined) throw new Error(`${name} does not have a capital in ${territories}`);
+  }
+
+  setInfluence(faction: Faction) {
+    if (this.capital.isOccupied()) throw new Error(`Cannot influence ${this.name} as it is occupied by ${this.resourcesForFaction().name}.`);
+    if (this.influence.length === 3) throw new Error(`Cannot influence ${this.name} as it is already a satellite for ${this.resourcesForFaction().name}.`);
+    this.influence = [faction];
   }
 
   addInfluence(faction: Faction) {
@@ -219,19 +325,33 @@ class Nation {
       return;
     }
     this.influence.push(faction);
+    if (this.influence.length === 3) this.occupy(faction);
+  }
+
+  canBeInfluenced() {
+    return !this.capital.isOccupied() && this.influence.length < 3;
   }
 
   resourcesForFaction(): Faction {
-    if (this.capital.isOccupied()) return this.capital.occupier;
+    if (this.capital.isOccupied()) return this.capital.controller;
     if (this.influence.length > 0) return this.influence[0];
-    return undefined;
+    return factions.Neutral;
+  }
+
+  occupy(faction: Faction) {
+    this.influence = [];
+    this.capital.occupy(faction);
+  }
+
+  isNeutral(): boolean {
+    return this.resourcesForFaction() === factions.Neutral;
   }
 
 }
 
 const areasByNation = groupByReduceFunction(landAreaTable, area => area.Nation);
 
-const territoriesByName = {};
+export const territoriesByName = {};
 const territoryList: Territory[] = [];
 const nationsByName = {};
 Object.keys(areasByNation).forEach(key => {
@@ -239,24 +359,38 @@ Object.keys(areasByNation).forEach(key => {
   //@ts-ignore
   if (nation.capital.StartFaction) {
     //@ts-ignore
-    nation.capital.occupier = factions[nation.capital.StartFaction];
-
+    nation.capital.controller = factions[nation.capital.StartFaction];
   }
   nationsByName[key] = nation;
   territoryList.push(...nation.territories);
-  nation.territories.forEach(area => territoriesByName[area.name] = area);
+  nation.territories.forEach(area => {
+    area.id = area.name;
+    territoriesByName[area.name] = area
+  });
 }
 );
 
+
+console.log("neutral", territoryList.filter(terr => terr.controller === factions.Neutral));
+/*
 nationsByName['Persia'].addInfluence(factions.Axis);
 
 console.log(factions.Axis.toString());
-console.log(factions.West.toString());
 console.log(factions.USSR.toString());
+console.log(factions.West.toString());
 
-territoriesByName['Tehran'].occupier = factions.USSR;
+nationsByName['Persia'].occupy(factions.USSR);
 territoriesByName['Abadan'].occupier = factions.West;
 
 console.log(factions.Axis.toString());
-console.log(factions.West.toString());
+console.log(factions.Axis.territoriesForResources().filter(terr => terr.hasResources()).map(t => t.toString()));
+
 console.log(factions.USSR.toString());
+console.log(factions.USSR.territoriesForResources().filter(terr => terr.hasResources()).map(t => t.toString()));
+
+console.log(factions.West.toString());
+console.log(factions.West.territoriesForResources().filter(terr => terr.hasResources()).map(t => t.toString()));
+
+console.log(territoryList.filter(terr => terr.isNeutral() && terr.hasResources()).map(t => t.toString()));
+
+*/
