@@ -11,7 +11,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Simulator />} />
-          <Route path="resourceTracker" element={<ResourceTracker />} />
+          <Route path="/resourceTracker" element={<ResourceTracker />} />
           <Route path="*" element={<NoPage />} />
         </Route>
       </Routes>
