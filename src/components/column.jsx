@@ -3,7 +3,7 @@ import React from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 import styled from "styled-components";
-import { Resource, Population } from "./Resource";
+import { Resource, Population } from "./TrackerIcons";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
@@ -15,17 +15,14 @@ const Container = styled.div`
   margin: 4px;
   border: 1px solid lightgrey;
   border-radius: 2px;
-  width: 2500px;
+  width: 1000px;
 
   display: flex;
   flex-direction: column;
 `;
 
-const Title = styled.h2`
-  padding: 8px;
-`;
-
 const TerritoryList = styled.div`
+  transition: background-color 0.2s ease;
   padding: 8px;
   background-color: ${props => (props.isDraggingOver ? props.faction.darkTone : props.faction.color)};
   flex-grow: 1;
@@ -42,7 +39,7 @@ export default class FactionColumn extends React.Component {
       return A.nation.name.localeCompare(B.nation.name);
     });
 
-
+    const highlights = this.props.highlightedTerritories
     return (
       <Container>
         <Droppable
@@ -63,12 +60,13 @@ export default class FactionColumn extends React.Component {
               </div>
               {this.props.addTerritoryField}
 
-
-
-
-
               {territoriesToShow.map((territory, index) => (
-                <TerritoryItem key={territory.name} territory={territory} index={index} />
+                <TerritoryItem 
+                  key={territory.name} 
+                  territory={territory} 
+                  index={index}
+                  highlight={highlights.indexOf(territory.name) !== -1}
+                />
               ))}
               {provided.placeholder}
             </TerritoryList>

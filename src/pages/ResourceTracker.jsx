@@ -15,12 +15,14 @@ import Item from "../components/item";
 import styled from "styled-components";
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
+import { convertToObject } from "typescript";
 
 const stateStructure = {
   territories: territoriesByName,
   factions: factions,
   order: Object.keys(factions),
   showOnlyWithResources: true,
+  highlightedTerritories: [],
 };
 
 
@@ -30,17 +32,16 @@ function AddTerritoryField({ territoryList, onAddTerritory }) {
 
   const onKeyPress = (e) => {
     if (e.keyCode == 13) {
-
-      console.log('value', e.target.value);
-      const matches = territoryList.filter((terr) => `${terr.name} (${terr.nation.name})`.match(new RegExp(e.target.value, "gi")));
-      console.log(matches);
+      const territoryName = e.target.value.replace(/\(.*$/,"");
+      console.log(territoryName);
+      const matches = territoryList.filter(terr => {
+        console.log(`"${terr.name} (${terr.nation.name})"`);
+        return `${terr.name} (${terr.nation.name})`.match(new RegExp(territoryName, "gi"));
+      });
       if (matches.length === 1) {
         const terr = matches[0];
         setToClearProperty(`${terr.name} (${terr.nation.name})`);
         onAddTerritory(terr);
-        /*        setTimeout(
-                  () => onAddTerritory(terr), 200
-                );*/
       }
     }
   }
@@ -72,25 +73,40 @@ class ResourceTracker extends React.Component {
   state = stateStructure;
 
   onDragStart = start => {
-    const homeIndex = this.state.order.indexOf(start.source.droppableId);
-    this.setState({
-      homeIndex,
-    });
-  }
+    const territory = territoriesByName[start.draggableId];
+    const highlighted = [];
+    console.log(territory);
+    if (territory.isCapital()) {
+      territory.nation.territories.filter(
+        terr => !terr.isGreatPowerHomeTerritory() && !terr.isOccupied()
+      ).forEach(terr => highlighted.push(terr.name))
+    }
 
-  occupyAndUpdate = (territory, occupier) => {
-    territory.occupy(occupier);
     const newState = {
       ...this.state,
+      originFaction: start.source.droppableId,
+      highlightedTerritories: highlighted
+    };
+    //console.log("onDragStart", newState);
+    this.setState(newState)
+  }
+
+  occupyAndUpdate = (territory, occupier, state = this.state) => {
+    territory.occupy(occupier);
+    const newState = {
+      ...state,
       territories: structuredClone(territoriesByName),
     }
     this.setState(newState);
   }
 
   onDragEnd = (result) => {
-    this.setState({
-      homeIndex: null,
-    });
+    const newState = {
+      ...this.state,
+      originFaction: null,
+      highlightedTerritories: []
+    }
+    this.setState(newState);
 
     const { destination, source, draggableId } = result;
     if (!destination) {
@@ -98,14 +114,18 @@ class ResourceTracker extends React.Component {
     }
 
     if (destination.droppableId === source.droppableId &&
-      destination.index === source.index) return;
-
+      destination.index === source.index) {
+      return;
+    }
     const originalFaction = this.state.factions[source.droppableId];
     const newFaction = this.state.factions[destination.droppableId];
 
     if (originalFaction !== newFaction) {
       const territory = territoriesByName[draggableId];
-      this.occupyAndUpdate(territory, newFaction);
+      this.occupyAndUpdate(territory, newFaction, {
+        ...this.state,
+        highlightedTerritories: []
+      });
     }
 
   };
@@ -122,14 +142,16 @@ class ResourceTracker extends React.Component {
               const faction = this.state.factions[id];
               if (faction === undefined) return <p>Not Found</p>
               return <FactionColumn
-                addTerritoryField={<AddTerritoryField
+                addTerritoryField={<AddTerritoryField 
                   territoryList={territoriesList}
                   onAddTerritory={territory => this.occupyAndUpdate(territory, faction)}
                 />}
                 key={faction.name}
                 faction={faction}
-                isDropDisabled={this.state.homeIndex === index}
-                onlyWithResources={this.state.showOnlyWithResources} />
+                isDropDisabled={this.state.originFaction === faction.name}
+                onlyWithResources={this.state.showOnlyWithResources}
+                highlightedTerritories={this.state.highlightedTerritories}
+              />
             })}
           </Container>
         </DragDropContext>

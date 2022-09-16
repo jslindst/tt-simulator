@@ -2,7 +2,7 @@ import React from "react";
 
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
-import { Resource, Population } from "./Resource";
+import { Resource, Population, Capital } from "./TrackerIcons";
 
 import { Territory } from "../model/HistoryTracker.ts";
 
@@ -17,10 +17,11 @@ import ListItem from "@mui/material/ListItem";
 import { ListSubheader } from "@mui/material";
 
 const ItemName = styled.div`
-  width: 150px;
+  width: 125px;
   text-align: left;
   display: flex;
   align-items: center;
+  margin-right: auto;
 `;
 
 const ForcedDiv = styled.div`
@@ -28,14 +29,16 @@ const ForcedDiv = styled.div`
 `;
 
 const Container = styled.div`
-  border: 1px solid lightgrey;
-  border-radius: 1px;
+  transition: background-color 0.4s ease;
+  border: ${props => (props.highlight ? "1px solid white" : "1px solid lightgrey")};
+  border-radius: 2px;
   padding: 4px;
   margin-bottom: 4px;
-  background-color: ${props => (props.color)}; 
+  background-color: ${props => props.highlight ? 'white' : props.color}; 
   display: flex;
   align-items: center;
   text-decoration: ${props => props.bold ? "underline" : "none"};
+  justify-content: flex-end;
 `;
 
 export default class TerritoryItem extends React.Component {
@@ -53,30 +56,9 @@ export default class TerritoryItem extends React.Component {
             isDragging={snapshot.isDragging}
             color={territory.nation.color}
             bold={territory.isCapital()}
+            highlight={this.props.highlight}
           >
-            <ItemName>{territory.name}
-
-              {territory.isSubCapital() || territory.isMainCapital() ? <svg
-                id={territory.name}
-                width="25"
-                height="25"
-                viewBox="0 0 100 100"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <g transform="translate(50,50)">
-                  <g transform="scale(0.6)">
-                    {territory.isMainCapital() ?
-                      <circle stroke="black" strokeWidth="2" fill="none" cx={0} cy={0} r={75} />
-                      : ""}
-                    <circle stroke="black" strokeWidth="2" fill="none" cx={0} cy={0} r={65} />
-                    <circle stroke="black" fill="white" strokeWidth="2" cx={0} cy={0} r={55} />
-                    <polygon fill={territory.isMainCapital() ? territory.startingFaction().darkTone : territory.startingFaction().color} strokeWidth="1"
-                      points="0,-50 29.39,40.45 -47.55,-15.45 47.55,-15.45 -29.39,40.45 " />
-                  </g>
-                </g>
-              </svg>
-                : ""}
-            </ItemName>
+            <ItemName>{territory.name}<Capital territory={territory} /></ItemName>
             <ForcedDiv width="50px">
               <Resource amount={territory.RES} />
               <Resource amount={territory.RESTransAfrica} color="red" />
@@ -84,7 +66,9 @@ export default class TerritoryItem extends React.Component {
             <ForcedDiv width="25px">
               <Population amount={territory.POP} />
             </ForcedDiv>
+            <ForcedDiv width="60px">
             <Chip size="small" label={territory.nation.shortName} />
+            </ForcedDiv>
           </Container>
         )}
       </Draggable>

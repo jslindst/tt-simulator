@@ -60,3 +60,28 @@ export const Population = ({ amount }) => {
 
   </svg>);
 }
+
+
+export const Capital = ({ territory }) => {
+  if (!territory.isMainCapital() && !territory.isSubCapital()) return "";
+  return <svg
+    id={territory.name}
+    style={{ marginLeft: "5px "}}
+    width="25"
+    height="25"
+    viewBox="0 0 100 100"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <g transform="translate(50,50)">
+      <g transform="scale(0.6)">
+        {territory.isMainCapital() ?
+          <circle stroke="black" strokeWidth="2" fill="none" cx={0} cy={0} r={75} />
+          : ""}
+        <circle stroke="black" strokeWidth="2" fill="none" cx={0} cy={0} r={65} />
+        <circle stroke="black" fill="white" strokeWidth="2" cx={0} cy={0} r={55} />
+        <polygon fill={territory.isMainCapital() ? territory.startingFaction().darkTone : territory.startingFaction().color} strokeWidth="1"
+          points="0,-50 29.39,40.45 -47.55,-15.45 47.55,-15.45 -29.39,40.45 " />
+      </g>
+    </g>
+  </svg>
+}

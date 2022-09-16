@@ -106,7 +106,7 @@ export const factions = {
 
 const LandAreaData = [
   ["StartFaction", "Nation", "name", "CityType", "Capital", "Type", "RES", "RESTransAfrica", "POP", "Muster", "CardName", "NumberOfCards"],
-  ["West", "Canada", "Ottawa", "Town", true, "HomeTerritory", 1, 0, 0, 1, "", 0],
+  ["West", "Canada", "Ottawa", "Town", true, "Colony", 1, 0, 0, 1, "", 0],
   ["Neutral", "USA", "New York", "City", false, "USA", 2, 0, 1, 2, "", 0],
   ["Neutral", "USA", "Washington", "SubCapital", true, "USA", 2, 0, 2, 0, "USA", 5],
   ["Neutral", "Latin America", "Rio de Janeiro", "Town", true, "MinorNation", 2, 0, 0, 1, "", 0],
@@ -115,12 +115,12 @@ const LandAreaData = [
   ["Neutral", "Denmark", "Iceland", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
   ["Neutral", "Denmark", "Copenhagen", "Town", true, "MinorNation", 1, 0, 0, 1, "Denmark", 3],
   ["Neutral", "Ireland", "Dublin", "Town", true, "MinorNation", 0, 0, 0, 1, "", 0],
-  ["West", "Britain", "London", "MainCapital", true, "HomeTerritory", 1, 0, 3, 0, "", 0],
-  ["West", "Britain", "Glasgow", "City", false, "HomeTerritory", 1, 0, 1, 2, "", 0],
-  ["West", "France", "Paris", "SubCapital", true, "HomeTerritory", 0, 0, 2, 0, "", 0],
-  ["West", "France", "Lorraine", "-", false, "HomeTerritory", 2, 0, 0, 0, "", 0],
-  ["West", "France", "Gascony", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["West", "France", "Marseille", "City", false, "HomeTerritory", 0, 0, 1, 2, "", 0],
+  ["West", "Britain", "London", "MainCapital", true, "GreatPower", 1, 0, 3, 0, "", 0],
+  ["West", "Britain", "Glasgow", "City", false, "GreatPower", 1, 0, 1, 2, "", 0],
+  ["West", "France", "Paris", "SubCapital", true, "MajorPower", 0, 0, 2, 0, "", 0],
+  ["West", "France", "Lorraine", "-", false, "MajorPower", 2, 0, 0, 0, "", 0],
+  ["West", "France", "Gascony", "-", false, "MajorPower", 0, 0, 0, 0, "", 0],
+  ["West", "France", "Marseille", "City", false, "MajorPower", 0, 0, 1, 2, "", 0],
   ["Neutral", "Spain", "Leon", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
   ["Neutral", "Spain", "Madrid", "Capital City", true, "MinorNation", 0, 0, 1, 3, "Spain", 4],
   ["Neutral", "Spain", "Barcelona", "City", false, "MinorNation", 0, 0, 1, 2, "", 0],
@@ -137,10 +137,10 @@ const LandAreaData = [
   ["Neutral", "Finland", "Helsinki", "Town", true, "MinorNation", 0, 0, 0, 1, "Finland", 4],
   ["Neutral", "Baltic States", "Riga", "Town", true, "MinorNation", 0, 0, 0, 1, "Baltic States", 2],
   ["Neutral", "Low Countries", "Amsterdam", "City", true, "MinorNation", 0, 0, 1, 2, "Low Countries", 4],
-  ["Axis", "Germany", "Ruhr", "SubCapital", false, "HomeTerritory", 3, 0, 2, 0, "", 0],
-  ["Axis", "Germany", "Berlin", "MainCapital", true, "HomeTerritory", 1, 0, 3, 0, "", 0],
-  ["Axis", "Germany", "Munich", "City", false, "HomeTerritory", 0, 0, 1, 2, "", 0],
-  ["Axis", "Germany", "Königsberg", "City", false, "HomeTerritory", 0, 0, 1, 2, "", 0],
+  ["Axis", "Germany", "Ruhr", "SubCapital", false, "GreatPower", 3, 0, 2, 0, "", 0],
+  ["Axis", "Germany", "Berlin", "MainCapital", true, "GreatPower", 1, 0, 3, 0, "", 0],
+  ["Axis", "Germany", "Munich", "City", false, "GreatPower", 0, 0, 1, 2, "", 0],
+  ["Axis", "Germany", "Königsberg", "City", false, "GreatPower", 0, 0, 1, 2, "", 0],
   ["Neutral", "Poland", "Warsaw", "Capital City", true, "MinorNation", 1, 0, 1, 3, "Poland", 3],
   ["Neutral", "Poland", "Vilna", "Town", false, "MinorNation", 0, 0, 0, 1, "", 0],
   ["Neutral", "Poland", "Lvov", "City", false, "MinorNation", 0, 0, 1, 2, "", 0],
@@ -154,41 +154,41 @@ const LandAreaData = [
   ["Neutral", "Albania", "Albania", "-", true, "MinorNation", 0, 0, 0, 0, "", 0],
   ["Neutral", "Greece", "Athens", "Town", true, "MinorNation", 1, 0, 0, 1, "", 0],
   ["Neutral", "Greece", "Crete", "-", false, "MinorNation", 0, 0, 0, 0, "Greece", 6],
-  ["Axis", "Italy", "Milan", "City", false, "HomeTerritory", 1, 0, 1, 2, "", 0],
-  ["Axis", "Italy", "Venice", "-", false, "HomeTerritory", 1, 0, 0, 0, "", 0],
-  ["Axis", "Italy", "Rome", "SubCapital", true, "HomeTerritory", 0, 0, 2, 0, "", 0],
-  ["Axis", "Italy", "Taranto", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["Axis", "Italy", "Sardinia", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["Axis", "Italy", "Sicily", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
+  ["Axis", "Italy", "Milan", "City", false, "MajorPower", 1, 0, 1, 2, "", 0],
+  ["Axis", "Italy", "Venice", "-", false, "MajorPower", 1, 0, 0, 0, "", 0],
+  ["Axis", "Italy", "Rome", "SubCapital", true, "MajorPower", 0, 0, 2, 0, "", 0],
+  ["Axis", "Italy", "Taranto", "-", false, "MajorPower", 0, 0, 0, 0, "", 0],
+  ["Axis", "Italy", "Sardinia", "-", false, "MajorPower", 0, 0, 0, 0, "", 0],
+  ["Axis", "Italy", "Sicily", "-", false, "MajorPower", 0, 0, 0, 0, "", 0],
   ["West", "Gibraltar", "Gibraltar", "Town", true, "Colony", 0, 0, 0, 1, "", 0],
   ["West", "Malta", "Malta", "Town", true, "Colony", 0, 0, 0, 1, "", 0],
   ["Axis", "Libya", "Tripoli", "City", true, "Colony", 0, 0, 1, 2, "", 0],
   ["Axis", "Libya", "Cyrenaica", "-", false, "Colony", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Murmansk", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Archangel", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Vologda", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Gorky", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Perm", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Urals", "City", false, "HomeTerritory", 1, 0, 1, 2, "", 0],
-  ["USSR", "USSR", "Western Siberia", "-", false, "HomeTerritory", 1, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Leningrad", "SubCapital", false, "HomeTerritory", 0, 0, 2, 0, "", 0],
-  ["USSR", "USSR", "Moscow", "MainCapital", true, "HomeTerritory", 0, 0, 3, 0, "", 0],
-  ["USSR", "USSR", "Penza", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Ufa", "-", false, "HomeTerritory", 1, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Kazakhstan", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Belorussia", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Bryansk", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Voronezh", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Kiev", "City", false, "HomeTerritory", 1, 0, 1, 2, "", 0],
-  ["USSR", "USSR", "Odessa", "City", false, "HomeTerritory", 2, 0, 1, 2, "", 0],
-  ["USSR", "USSR", "Kharkov", "City", false, "HomeTerritory", 1, 0, 1, 2, "", 0],
-  ["USSR", "USSR", "Stalingrad", "City", false, "HomeTerritory", 0, 0, 1, 2, "", 0],
-  ["USSR", "USSR", "Sevastopol", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Kuban", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Grozny", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Georgia", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
-  ["USSR", "USSR", "Baku", "SubCapital", false, "HomeTerritory", 3, 1, 2, 0, "", 0],
-  ["USSR", "USSR", "Turkmenistan", "-", false, "HomeTerritory", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Murmansk", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Archangel", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Vologda", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Gorky", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Perm", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Urals", "City", false, "GreatPower", 1, 0, 1, 2, "", 0],
+  ["USSR", "USSR", "Western Siberia", "-", false, "GreatPower", 1, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Leningrad", "SubCapital", false, "GreatPower", 0, 0, 2, 0, "", 0],
+  ["USSR", "USSR", "Moscow", "MainCapital", true, "GreatPower", 0, 0, 3, 0, "", 0],
+  ["USSR", "USSR", "Penza", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Ufa", "-", false, "GreatPower", 1, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Kazakhstan", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Belorussia", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Bryansk", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Voronezh", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Kiev", "City", false, "GreatPower", 1, 0, 1, 2, "", 0],
+  ["USSR", "USSR", "Odessa", "City", false, "GreatPower", 2, 0, 1, 2, "", 0],
+  ["USSR", "USSR", "Kharkov", "City", false, "GreatPower", 1, 0, 1, 2, "", 0],
+  ["USSR", "USSR", "Stalingrad", "City", false, "GreatPower", 0, 0, 1, 2, "", 0],
+  ["USSR", "USSR", "Sevastopol", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Kuban", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Grozny", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Georgia", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
+  ["USSR", "USSR", "Baku", "SubCapital", false, "GreatPower", 3, 1, 2, 0, "", 0],
+  ["USSR", "USSR", "Turkmenistan", "-", false, "GreatPower", 0, 0, 0, 0, "", 0],
   ["Neutral", "Turkey", "Istanbul", "City", false, "MinorNation", 0, 0, 1, 2, "Turkey", 3],
   ["Neutral", "Turkey", "Izmir", "Town", false, "MinorNation", 1, 0, 0, 1, "", 0],
   ["Neutral", "Turkey", "Ankara", "Capital City", true, "MinorNation", 0, 0, 1, 3, "", 0],
@@ -234,19 +234,27 @@ export class Territory {
   id: string;
   name: string;
   controller: Faction;
+  homeTerritoryOf: Faction;
   nation: Nation;
   RES: number;
   RESTransAfrica;
   POP: number;
   CityType: string;
   StartFaction: string;
+  Type: string;
 
   constructor(obj: LandArea, nation: Nation) {
     Object.assign(this, obj);
     if (nation !== null && nation !== undefined) this.nation = nation;
+    this.homeTerritoryOf = factions[this.StartFaction];
+  }
+
+  isGreatPowerHomeTerritory(): boolean {
+    return this.Type === "GreatPower";
   }
 
   resourcesDefaultFaction(): Faction {
+    if (this.isGreatPowerHomeTerritory()) return this.homeTerritoryOf;
     return this.nation.resourcesForFaction();
   }
 
@@ -370,8 +378,6 @@ Object.keys(areasByNation).forEach(key => {
 }
 );
 
-
-console.log("neutral", territoryList.filter(terr => terr.controller === factions.Neutral));
 /*
 nationsByName['Persia'].addInfluence(factions.Axis);
 
