@@ -57,7 +57,7 @@ export type LandArea = {
   NumberOfCards: number
 }
 
-class Faction {
+export class Faction {
 
   name: string;
   IND: number;
@@ -69,24 +69,28 @@ class Faction {
     this.maxPips = undefined;
   }
 
-  territoriesForResources(): Territory[] {
-    return territoryList.filter(area => area.resourcesForFaction() === this);
+  territories(): Territory[] {
+    return territoryList.filter(area => area.resourcesForFaction().name === this.name);
+  }
+
+  territoriesWithResources(): Territory[] {
+    return this.territories().filter(area => area.hasResources());
   }
 
   POP(): number {
-    return this.territoriesForResources().reduce((val, area) => {
+    return this.territoriesWithResources().reduce((val, area) => {
       return val = val + area.POP;
     }, 0);
   }
 
   RES(): number {
-    return this.territoriesForResources().filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
+    return this.territoriesWithResources().filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
       return val = val + area.RES;
     }, 0)
   }
 
   RESTransAfrica(): number {
-    return this.territoriesForResources().filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
+    return this.territoriesWithResources().filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
       return val = val + area.RESTransAfrica;
     }, 0);
   }
@@ -243,7 +247,7 @@ export class Territory {
   StartFaction: string;
   Type: string;
 
-  constructor(obj: LandArea, nation: Nation) {
+  constructor(obj: LandArea, nation?: Nation) {
     Object.assign(this, obj);
     if (nation !== null && nation !== undefined) this.nation = nation;
     this.homeTerritoryOf = factions[this.StartFaction];
@@ -360,7 +364,7 @@ export class Nation {
 const areasByNation = groupByReduceFunction(landAreaTable, area => area.Nation);
 
 export const territoriesByName = {};
-const territoryList: Territory[] = [];
+export const territoryList: Territory[] = [];
 const nationsByName = {};
 Object.keys(areasByNation).forEach(key => {
   const nation = new Nation(key, areasByNation[key]);

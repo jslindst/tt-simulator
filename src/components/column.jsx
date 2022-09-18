@@ -33,12 +33,17 @@ export default class FactionColumn extends React.Component {
   render() {
     const faction = this.props.faction;
 
-    const territoriesToShow = faction.territoriesForResources().filter(terr => !this.props.onlyWithResources || terr.hasResources()).sort((A, B) => {
+    const territoriesToShow = faction.territoriesWithResources().sort((A, B) => {
       if (A.nation.name === B.nation.name)
         return A.name.localeCompare(B.name);
       return A.nation.name.localeCompare(B.nation.name);
     });
 
+    /*
+    console.log("Column " + faction.name + ", showing territories", territoriesToShow);
+    console.log(faction);
+    console.log("all territories of " + faction.name, faction.territories());
+*/
     const highlights = this.props.highlightedTerritories
     return (
       <Container>
@@ -52,18 +57,19 @@ export default class FactionColumn extends React.Component {
               isDraggingOver={snapshot.isDraggingOver}
               faction={faction}
             >
-              <div style={{ display: "flex" }}>
-                <div style={{ width: "150px", padding: "4px", fontSize: "20px", fontWeight: "bold" }}>{faction.name}</div>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div style={{ width: "125px", padding: "3px", fontSize: "20px", fontWeight: "bold", marginRight: "auto" }}>{faction.name}</div>
+                <div style={{ width: "25px" }}><Population amount={faction.POP()} /></div>
                 <div style={{ width: "25px" }}><Resource amount={faction.RES()} /></div>
                 <div style={{ width: "25px" }}><Resource color="red" amount={faction.RESTransAfrica()} /></div>
-                <div style={{ width: "25px" }}><Population amount={faction.POP()} /></div>
+                <div style={{ width: "65px" }} />
               </div>
               {this.props.addTerritoryField}
 
               {territoriesToShow.map((territory, index) => (
-                <TerritoryItem 
-                  key={territory.name} 
-                  territory={territory} 
+                <TerritoryItem
+                  key={territory.name}
+                  territory={territory}
                   index={index}
                   highlight={highlights.indexOf(territory.name) !== -1}
                 />

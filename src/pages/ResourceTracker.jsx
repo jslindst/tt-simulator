@@ -7,21 +7,26 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
+import  { Redirect } from 'react-router-dom'
 
-import { territoriesByName, factions } from "../model/HistoryTracker.ts";
+import { territoriesByName, factions, territoryList } from "../model/HistoryTracker.ts";
 import FactionColumn from "../components/column";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import Item from "../components/item";
 import styled from "styled-components";
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
-import { convertToObject } from "typescript";
+import { Territory,Faction } from "../model/HistoryTracker.ts";
+
+import { useNavigate } from "react-router-dom";
+import { SiteAppBar } from "./SiteAppBar";
+
+const CHAR_LOOKUP = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!#*';
+export const TERRITORIES_WITH_RESOURCES = Object.keys(territoriesByName).map(key => territoriesByName[key]).filter(terr => terr.hasResources());
 
 const stateStructure = {
   territories: territoriesByName,
   factions: factions,
   order: Object.keys(factions),
-  showOnlyWithResources: true,
   highlightedTerritories: [],
 };
 
@@ -32,7 +37,7 @@ function AddTerritoryField({ territoryList, onAddTerritory }) {
 
   const onKeyPress = (e) => {
     if (e.keyCode == 13) {
-      const territoryName = e.target.value.replace(/\(.*$/,"");
+      const territoryName = e.target.value.replace(/\(.*$/, "");
       console.log(territoryName);
       const matches = territoryList.filter(terr => {
         console.log(`"${terr.name} (${terr.nation.name})"`);
@@ -63,14 +68,43 @@ function AddTerritoryField({ territoryList, onAddTerritory }) {
   );
 }
 
-
-
 const Container = styled.div`
   display:flex;
 `;
 
+function ResetButton() {
+  let navigate = useNavigate();
+
+  function handleClick() {
+    navigate("/resourceTracker");
+    navigate(0);
+  }
+
+  return (
+    <Button type="button" size="small" color="inherit" onClick={handleClick}>Reset</Button>
+  );
+}
+
+
+
 class ResourceTracker extends React.Component {
-  state = stateStructure;
+
+
+  createInitState() {
+    const initState = stateStructure;
+    return initState;
+  }
+
+
+  constructor() {   
+    super();
+    this.state = this.createInitState();
+    var locationMatch = window.location.search.match(/^\?([a-z0-9#!*|]+)$/i);
+    if (locationMatch) {
+      console.log("reading state from url");
+      this.applyOccupiedStateString(this.state, locationMatch[1]);
+    }
+  }
 
   onDragStart = start => {
     const territory = territoriesByName[start.draggableId];
@@ -91,6 +125,33 @@ class ResourceTracker extends React.Component {
     this.setState(newState)
   }
 
+  createOccupiedStateString(stateObject) {
+    return Object.keys(stateObject.factions).map(id => {
+      return factions[id].territoriesWithResources().filter(terr => terr.isOccupied())
+        .map(terr => TERRITORIES_WITH_RESOURCES.findIndex(item => terr.name === item.name))
+        .map(index => {
+          return CHAR_LOOKUP.charAt(index);
+        }).join('');
+    }).join("|");
+  }
+
+  applyOccupiedStateString(stateObject, string) {
+    const occupiedAreas = string.split("|");
+    if (occupiedAreas.length !== 4) {
+      console.log("cannot read url.");
+      return;
+    }
+    Object.keys(stateObject.factions).forEach((factionKey, index) => {
+      const faction = stateObject.factions[factionKey];
+      occupiedAreas[index].split('').forEach(char => {
+        const territory = TERRITORIES_WITH_RESOURCES[CHAR_LOOKUP.indexOf(char)];
+        console.log("url override:", territory, faction);
+        stateObject.territories[territory.name].occupy(faction);
+      })
+    });    
+    return stateObject;
+  }
+
   occupyAndUpdate = (territory, occupier, state = this.state) => {
     territory.occupy(occupier);
     const newState = {
@@ -98,6 +159,8 @@ class ResourceTracker extends React.Component {
       territories: structuredClone(territoriesByName),
     }
     this.setState(newState);
+    const territoryStateString = this.createOccupiedStateString(newState);
+    window.history.replaceState(null, "Resource Tracker", `?${territoryStateString}`);
   }
 
   onDragEnd = (result) => {
@@ -131,9 +194,11 @@ class ResourceTracker extends React.Component {
   };
 
   render() {
-    const territoriesList = Object.keys(territoriesByName).map(key => territoriesByName[key]).filter(terr => !this.state.showOnlyWithResources || terr.hasResources());
     return (
-      <div>
+      <div class="App">
+        <SiteAppBar title={"Tragedy & Triumph - Resource Tracker v1.11"} actionButton={
+          <ResetButton />
+        }/>
         <DragDropContext
           onDragStart={this.onDragStart}
           onDragEnd={this.onDragEnd}>
@@ -142,14 +207,13 @@ class ResourceTracker extends React.Component {
               const faction = this.state.factions[id];
               if (faction === undefined) return <p>Not Found</p>
               return <FactionColumn
-                addTerritoryField={<AddTerritoryField 
-                  territoryList={territoriesList}
+                addTerritoryField={<AddTerritoryField
+                  territoryList={TERRITORIES_WITH_RESOURCES}
                   onAddTerritory={territory => this.occupyAndUpdate(territory, faction)}
                 />}
                 key={faction.name}
                 faction={faction}
                 isDropDisabled={this.state.originFaction === faction.name}
-                onlyWithResources={this.state.showOnlyWithResources}
                 highlightedTerritories={this.state.highlightedTerritories}
               />
             })}

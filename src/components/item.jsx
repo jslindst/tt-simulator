@@ -22,6 +22,7 @@ const ItemName = styled.div`
   display: flex;
   align-items: center;
   margin-right: auto;
+  text-decoration: ${props => props.bold ? "underline" : "none"};
 `;
 
 const ForcedDiv = styled.div`
@@ -37,7 +38,6 @@ const Container = styled.div`
   background-color: ${props => props.highlight ? 'white' : props.color}; 
   display: flex;
   align-items: center;
-  text-decoration: ${props => props.bold ? "underline" : "none"};
   justify-content: flex-end;
 `;
 
@@ -55,17 +55,12 @@ export default class TerritoryItem extends React.Component {
             ref={provided.innerRef}
             isDragging={snapshot.isDragging}
             color={territory.nation.color}
-            bold={territory.isCapital()}
             highlight={this.props.highlight}
           >
-            <ItemName>{territory.name}<Capital territory={territory} /></ItemName>
-            <ForcedDiv width="50px">
-              <Resource amount={territory.RES} />
-              <Resource amount={territory.RESTransAfrica} color="red" />
-            </ForcedDiv>
-            <ForcedDiv width="25px">
-              <Population amount={territory.POP} />
-            </ForcedDiv>
+            <ItemName bold={territory.isCapital()}>{territory.name}<Capital territory={territory} /></ItemName>
+            <ForcedDiv width="25px"><Population amount={territory.POP} /></ForcedDiv>
+            <ForcedDiv width="25px"><Resource amount={territory.RES} /></ForcedDiv>
+            <ForcedDiv width="25px"><Resource amount={territory.RESTransAfrica} color="red"/></ForcedDiv>
             <ForcedDiv width="60px">
             <Chip size="small" label={territory.nation.shortName} />
             </ForcedDiv>

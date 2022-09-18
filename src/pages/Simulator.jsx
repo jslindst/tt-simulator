@@ -1,15 +1,5 @@
 import Grid from "@mui/material/Grid"; // Grid version 1
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
-import Slide from "@mui/material/Slide";
 
-import AppBar from "@mui/material/AppBar";
-import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
 import InfoIcon from "@mui/icons-material/Info";
 
@@ -36,6 +26,7 @@ import Divider from "@mui/material/Divider";
 import { Nation } from "../model/HistoryTracker.ts";
 import { groupByReduceFunction } from "../utils/utils.js";
 
+import { HelpDialogSlide } from "../components/HelpDialogSlide";
 import { BlockSvg } from "../components/BlockSvg";
 
 import { AttackOrderList } from "../components/AttackOrderList.js";
@@ -59,6 +50,7 @@ import {
 import React from "react";
 import Plot from "react-plotly.js";
 import { Tooltip } from "@mui/material";
+import { SiteAppBar } from "./SiteAppBar";
 
 const STANDARD_ATTACK_ORDER = [
   "MAX",
@@ -87,6 +79,77 @@ const initialAttackerTnT = {
   DoW: false,
   nationName: "West",
 };
+
+const SIMULATOR_HELP_TEXT = () => (
+  <>
+    <p>
+      This is a combat simulator for the{" "}
+      <a href="https://www.gmtgames.com/p-722-triumph-and-tragedy-3rd-printing.aspx">
+        Tragedy &amp; Triumph</a>{" "}
+      <a href="https://www.gmtgames.com/p-840-conquest-and-consequence.aspx">
+        Conquest &amp; Consequence</a>{" "}board game by Craig Besinque published by GMT Games LLC.</p>
+
+    <p>
+      Here you can simulate the battles over one or more combat rounds for
+      two opposing forces.
+</p>
+
+    <p>
+      <b>BattleForce</b> - <b>Click</b> add pip, <b>Shift+Click</b> remove
+pip, <b>Right Click</b> remove block
+</p>
+
+    <p>
+      <b>Target Class Priority</b> - This defines the unit classes of the
+opposing force that are targeted when units are firing. <b>MAX</b>{" "}
+aims to always target the class that has the highest chance of
+success.
+<b>Units will skip priorities which they cannot hit.</b> (ie. Tanks
+will not try to fire at Air Force even when A is the left most
+(highest) priority. <b>IND</b> is industry.
+</p>
+
+    <p>
+      <b>Combat Rounds</b> - You can add several combat rounds to the
+simulation, including defining which side initiates the attack (by
+clicking and switching the arrow). For the first round also DoW and
+SeaInvasion can be simulated.
+</p>
+
+    <p>
+      <b>Known issues</b>
+    </p>
+
+    <ul>
+      <li>
+        Retreats: Not currently simulated. Thus also the carrier evade is
+        not simulated.
+</li>
+      <li>
+        Target Class Priority: Convoys are not separately targetable.
+</li>
+      <li>
+        Target Class Priority: MAX targets the opposing unit class with
+        highest chance of hitting, not damaging - ie. double hits are not
+        considered.
+</li>
+      <li>
+        Battlegroups: Currently only one battlegroup is possible on each
+        side, so reinforcements or multiple battlegroups joining are not
+        simulated.
+</li>
+      <li>CnC - Kamikaze: Option not implemented.</li>
+    </ul>
+
+    <p>
+      This simulator was written by kijoe. Please post bugs, feedback,
+comments, suggestions in the{" "}
+      <a href="https://boardgamegeek.com/thread/2931896/combat-simulator-tragedy-triumph">
+        BGG Forums here
+</a>
+.{" "}
+    </p></>);
+
 
 const VisualizeForce = ({
   attacker,
@@ -354,8 +417,8 @@ const ForcePanel = ({ attacker, onUpdate }) => {
                           strength: unit.special
                             ? 10
                             : NationLookup[forceA.nationName].maxPips(
-                                unit.name
-                              ),
+                              unit.name
+                            ),
                         }}
                       />
                     </MenuItem>
@@ -411,116 +474,6 @@ const ForcePanel = ({ attacker, onUpdate }) => {
   );
 };
 
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
-
-function HelpDialogSlide() {
-  const [open, setOpen] = React.useState(false);
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  return (
-    <div>
-      <Button color="inherit" onClick={handleClickOpen}>
-        Help
-      </Button>
-      <Dialog
-        open={open}
-        TransitionComponent={Transition}
-        keepMounted
-        onClose={handleClose}
-      >
-        <DialogTitle>
-          {"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}
-        </DialogTitle>
-        <DialogContent>
-          <p>
-            This is a combat simulator for the{" "}
-            <a href="https://www.gmtgames.com/p-722-triumph-and-tragedy-3rd-printing.aspx">
-              Tragedy &amp; Triumph
-            </a>{" "}
-            <a href="https://www.gmtgames.com/p-840-conquest-and-consequence.aspx">
-              Conquest &amp; Consequence
-            </a>{" "}
-            board game by Craig Besinque published by GMT Games LLC.
-          </p>
-
-          <p>
-            Here you can simulate the battles over one or more combat rounds for
-            two opposing forces.
-          </p>
-
-          <p>
-            <b>BattleForce</b> - <b>Click</b> add pip, <b>Shift+Click</b> remove
-            pip, <b>Right Click</b> remove block
-          </p>
-
-          <p>
-            <b>Target Class Priority</b> - This defines the unit classes of the
-            opposing force that are targeted when units are firing. <b>MAX</b>{" "}
-            aims to always target the class that has the highest chance of
-            success.
-            <b>Units will skip priorities which they cannot hit.</b> (ie. Tanks
-            will not try to fire at Air Force even when A is the left most
-            (highest) priority. <b>IND</b> is industry.
-          </p>
-
-          <p>
-            <b>Combat Rounds</b> - You can add several combat rounds to the
-            simulation, including defining which side initiates the attack (by
-            clicking and switching the arrow). For the first round also DoW and
-            SeaInvasion can be simulated.
-          </p>
-
-          <p>
-            <b>Known issues</b>
-          </p>
-
-          <ul>
-            <li>
-              Retreats: Not currently simulated. Thus also the carrier evade is
-              not simulated.
-            </li>
-            <li>
-              Target Class Priority: Convoys are not separately targetable.
-            </li>
-            <li>
-              Target Class Priority: MAX targets the opposing unit class with
-              highest chance of hitting, not damaging - ie. double hits are not
-              considered.
-            </li>
-            <li>
-              Battlegroups: Currently only one battlegroup is possible on each
-              side, so reinforcements or multiple battlegroups joining are not
-              simulated.
-            </li>
-            <li>CnC - Kamikaze: Option not implemented.</li>
-          </ul>
-
-          <p>
-            This simulator was written by kijoe. Please post bugs, feedback,
-            comments, suggestions in the{" "}
-            <a href="https://boardgamegeek.com/thread/2931896/combat-simulator-tragedy-triumph">
-              BGG Forums here
-            </a>
-            .{" "}
-          </p>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </div>
-  );
-}
-
 function Simulator() {
   var locationString = window.location.search;
 
@@ -528,7 +481,7 @@ function Simulator() {
     /^\?(cnc)?([a-z0-9|!]*):([a-z0-9|!]*)(:[a-z]*)?$/i
   );
 
-//  console.log("valid", validString);
+  //  console.log("valid", validString);
 
   const AForceString = validString ? validString[2] : "!wt3|wt3!012345";
   const BForceString = validString ? validString[3] : "!ai4|ai2!012345";
@@ -574,7 +527,7 @@ function Simulator() {
   initializeFromString(BForceString, initialDefenderTnT);
 
   const initialCombatRounds = [];
-  
+
   const formatCombatRoundsString = (combatRounds) => {
     return combatRounds.map((round) => {
       return round.attacker + (round.hasDoWFirstFire ? "d" : "x") + (round.seaInvasion ? "s" : "n");
@@ -600,7 +553,7 @@ function Simulator() {
     );
   };
 
-  initializeCombatRoundsFromString(validString && validString.length > 3 ? validString[4] : "Axn", 
+  initializeCombatRoundsFromString(validString && validString.length > 3 ? validString[4] : "Axn",
     initialCombatRounds
   );
 
@@ -676,7 +629,7 @@ function Simulator() {
 
 
   const updateURL = ({ updateAttacker = battleforceA, updateDefender = battleforceB, updateRounds = combatRounds }) => {
-//    console.log("Updating URL ", updateAttacker, updateDefender);
+    //    console.log("Updating URL ", updateAttacker, updateDefender);
     window.history.replaceState(
       { page: 2 },
       "Combat Simulator",
@@ -687,7 +640,7 @@ function Simulator() {
   function setDoW(value) {
     const copy = JSON.parse(JSON.stringify(combatRounds));
     if (copy?.length > 0) {
-  //    console.log(copy, value);
+      //    console.log(copy, value);
       copy[0].hasDoWFirstFire = value;
       setCombatRounds(copy);
       updateURL({ updateRounds: copy });
@@ -751,17 +704,12 @@ function Simulator() {
 
   return (
     <div className="App">
-      <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static">
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Tragedy &amp; Triumph / Conquest &amp; Consequence - Combat
-              Simulator v1.12
-            </Typography>
-            <HelpDialogSlide />
-          </Toolbar>
-        </AppBar>
-      </Box>
+      <SiteAppBar 
+        title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator v1.12"}
+        help={<HelpDialogSlide
+        title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}
+        content={SIMULATOR_HELP_TEXT()}
+      />} />
       <List>
         <ListItem key="forces">
           <Grid container spacing={0}>
