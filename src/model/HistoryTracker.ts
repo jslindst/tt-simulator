@@ -2,6 +2,12 @@ import { groupByReduceFunction } from "../utils/utils.js";
 //@ts-ignore
 import { Nations } from "./battle.ts";
 
+export const BlockadeLevel = {
+  NONE: 0,
+  MED: 1,
+  FULL: 2
+}
+
 const countryNameToAcronym = {
   "Canada": { name: "CA", color: 'rgb(29,176,223)' },
   "USA": { name: "US", color: 'rgb(136,190,128)' },
@@ -77,21 +83,25 @@ export class Faction {
     return this.territories().filter(area => area.hasResources());
   }
 
+  blockedTerritories(): Territory[] {
+    return this.territories().filter(area => area.blockadeLevel > 0);
+  }
+
   POP(): number {
     return this.territoriesWithResources().reduce((val, area) => {
-      return val = val + area.POP;
+      return val = val + (area.blockadeLevel === BlockadeLevel.NONE ? area.POP : 0);
     }, 0);
   }
 
   RES(): number {
     return this.territoriesWithResources().filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
-      return val = val + area.RES;
+      return val = val + (area.blockadeLevel === BlockadeLevel.NONE ? area.RES : 0);
     }, 0)
   }
 
   RESTransAfrica(): number {
     return this.territoriesWithResources().filter(area => area.resourcesForFaction() === this).reduce((val, area) => {
-      return val = val + area.RESTransAfrica;
+      return val = val + (area.blockadeLevel !== BlockadeLevel.FULL ? area.RESTransAfrica : 0);
     }, 0);
   }
 
@@ -246,6 +256,7 @@ export class Territory {
   CityType: string;
   StartFaction: string;
   Type: string;
+  blockadeLevel: any = BlockadeLevel.NONE;
 
   constructor(obj: LandArea, nation?: Nation) {
     Object.assign(this, obj);
@@ -285,6 +296,7 @@ export class Territory {
 
   occupy(faction: Faction) {
     this.controller = faction;
+    this.blockadeLevel = BlockadeLevel.NONE;
   }
 
   startingFaction(): Faction {
