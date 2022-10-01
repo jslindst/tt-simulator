@@ -29,7 +29,7 @@ export const Resource = ({ amount, color = "black" }) => {
   </svg>)
 };
 
-export const Population = ({ amount }) => {
+export const Population = ({ amount, color = "black" }) => {
   if (amount === 0) return "";
   return (<svg
     id="resource"
@@ -40,9 +40,9 @@ export const Population = ({ amount }) => {
   >
     <g transform="translate(50,33)">
       <g transform="scale(0.87)">
-        <circle stroke="black" strokeWidth="2" fill="black" cx={0} cy={-10} r={20} />
-        <rect fill="black" width={60} height={60} x={-30} y={10} rx={20} />
-        <rect fill="black" width={60} height={20} x={-30} y={50} rx={20} />
+        <circle stroke={color} strokeWidth="2" fill={color} cx={0} cy={-10} r={20} />
+        <rect fill={color} width={60} height={60} x={-30} y={10} rx={20} />
+        <rect fill={color} width={60} height={20} x={-30} y={50} rx={20} />
       </g>
     </g>
 

@@ -1,15 +1,9 @@
 import React from "react";
 
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-
+import { Droppable } from "@hello-pangea/dnd";
 import styled from "styled-components";
 import { Resource, Population } from "./TrackerIcons";
-import List from "@mui/material/List";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemText from "@mui/material/ListItemText";
-import ListItem from "@mui/material/ListItem";
-import { ListSubheader } from "@mui/material";
-import TerritoryItem from "./item";
+import TerritoryItem from "./item.jsx";
 
 const Container = styled.div`
   margin: 4px;
@@ -39,11 +33,7 @@ export default class FactionColumn extends React.Component {
       return A.nation.name.localeCompare(B.nation.name);
     });
 
-    /*
-    console.log("Column " + faction.name + ", showing territories", territoriesToShow);
-    console.log(faction);
-    console.log("all territories of " + faction.name, faction.territories());
-*/
+
     const highlights = this.props.highlightedTerritories
     return (
       <Container>
@@ -72,6 +62,7 @@ export default class FactionColumn extends React.Component {
                   territory={territory}
                   index={index}
                   highlight={highlights.indexOf(territory.name) !== -1}
+                  onClick={() => this.props.blockadeUpdateFunction(territory,territory.blockadeLevel)}
                 />
               ))}
               {provided.placeholder}

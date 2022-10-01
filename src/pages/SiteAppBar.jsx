@@ -50,7 +50,13 @@ export const SiteAppBar = (props) => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
-        <Toolbar style={{ minHeight: "15px" }}>
+        <Toolbar style={{
+          minHeight: "15px", textAlign: "center",
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+        }}>
           <IconButton
             size="medium"
             edge="start"
