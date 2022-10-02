@@ -109,10 +109,11 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
   constructor(props) {
     super(props);
     this.state = this.createInitState();
-    var locationMatch = window.location.search.match(/^\?([a-z0-9#!*|:]+)$/i);
+    var locationMatch = window.location.search.match(/^\?([a-z0-9#!*|:=%]+)$/i);
     if (locationMatch) {
-      console.log("reading state from url");
-      this.applyOccupiedStateString(this.state, locationMatch[1]);
+      const stateUrlUndecoded = decodeURIComponent(locationMatch[1]);
+      console.log("reading state from url", stateUrlUndecoded);
+      this.applyOccupiedStateString(this.state, stateUrlUndecoded);
     }
   }
 
@@ -196,7 +197,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
     }
     this.setState(newState);
     const territoryStateString = this.createOccupiedStateString(newState);
-    window.history.replaceState(null, "Resource Tracker", `?${territoryStateString}`);
+    window.history.replaceState(null, "Resource Tracker", `?${encodeURIComponent(territoryStateString)}`);
   }
 
 
