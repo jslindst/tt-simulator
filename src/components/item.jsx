@@ -53,6 +53,7 @@ export default class TerritoryItem extends React.Component {
             onClick={this.props.onClick}
           >
             <ItemName bold={territory.isCapital()}>{territory.name}<Capital territory={territory} /></ItemName>
+            {territory.blockadeLevel === BlockadeLevel.MED && "(MED)"}
             <ForcedDiv width="25px" style={{opacity: territory.blockadeLevel > 0 ? "20%" : "100%"}}><Population amount={territory.POP} /></ForcedDiv>
             <ForcedDiv width="25px" style={{opacity: territory.blockadeLevel > 0 ? "20%" : "100%"}}><Resource amount={territory.RES} /></ForcedDiv>
             <ForcedDiv width="25px" style={{opacity: territory.blockadeLevel > 1 ? "20%" : "100%"}}><Resource amount={territory.RESTransAfrica} color="red"/></ForcedDiv>
