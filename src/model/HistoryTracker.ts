@@ -8,7 +8,12 @@ export const BlockadeLevel = {
   FULL: 2
 }
 
-const countryNameToAcronym = {
+type CountryDef = {
+  name: string,
+  color: string,
+}
+
+const countryNameToAcronym: { [name: string]: CountryDef } = {
   "Canada": { name: "CA", color: 'rgb(29,176,223)' },
   "USA": { name: "US", color: 'rgb(136,190,128)' },
   "Latin America": { name: "LA", color: 'rgb(191,169,125)' },
@@ -46,8 +51,6 @@ const countryNameToAcronym = {
   "Syria": { name: "SY", color: 'rgb(177,221,221)' },
   "Middle East": { name: "ME", color: 'rgb(144,203,230)' },
 }
-
-
 
 export type LandArea = {
   name: string,
@@ -118,7 +121,7 @@ export const factions = {
   Neutral: new Faction(Nations[1])
 }
 
-const LandAreaData = [
+const TTLandAreaData = [
   ["StartFaction", "Nation", "name", "CityType", "Capital", "Type", "RES", "RESTransAfrica", "POP", "Muster", "CardName", "NumberOfCards"],
   ["West", "Canada", "Ottawa", "Town", true, "Colony", 1, 0, 0, 1, "", 0],
   ["Neutral", "USA", "New York", "City", false, "USA", 2, 0, 1, 2, "", 0],
@@ -225,12 +228,16 @@ const LandAreaData = [
   ["West", "Middle East", "Iraq", "-", false, "Colony", 1, 1, 0, 0, "", 0],
 ];
 
+
+
+
+
 // @ts-ignore
-const header: string[] = LandAreaData.shift();
+const header: string[] = TTLandAreaData.shift();
 export const landAreaTable: LandArea[] = []
 export const landAreaLookup = {};
 
-LandAreaData.forEach((data) => {
+TTLandAreaData.forEach((data) => {
 
   //@ts-ignore
   const area: LandArea = {};
@@ -377,12 +384,11 @@ const areasByNation = groupByReduceFunction(landAreaTable, area => area.Nation);
 
 export const territoriesByName = {};
 export const territoryList: Territory[] = [];
-const nationsByName = {};
+
+export const nationsByName = {};
 Object.keys(areasByNation).forEach(key => {
   const nation = new Nation(key, areasByNation[key]);
-  //@ts-ignore
   if (nation.capital.StartFaction) {
-    //@ts-ignore
     nation.capital.controller = factions[nation.capital.StartFaction];
   }
   nationsByName[key] = nation;

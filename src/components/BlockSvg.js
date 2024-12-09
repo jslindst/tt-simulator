@@ -67,11 +67,12 @@ const PipsElement = ({ maxPips, pipColor, edition }) => {
   );
 };
 
-export const BlockSvg = ({ id, nationLookup, nation, block, onClick, onContextMenu }) => {
-//  console.log ("Nation", nation);
-//  console.log ("NationLookup", nationLookup);
+export const BlockSvg = ({ id, nationLookup, nation, block, emptyIsEliminated, onClick, onContextMenu }) => {
+  //  console.log ("Nation", nation);
+  //  console.log ("NationLookup", nationLookup);
 
   const blockNation = nation ? nation : nationLookup[block.nationName];
+  const isEliminated = emptyIsEliminated;
   if (block === null || block === undefined) {
     return (
       <svg
@@ -87,10 +88,12 @@ export const BlockSvg = ({ id, nationLookup, nation, block, onClick, onContextMe
         <g stroke="black" strokeWidth="1" fill="none" fillRule="evenodd">
           <rect width="100" height="100" />
         </g>
-        <g stroke="red" strokeWidth="2" fill={blockNation.darkTone}>
-          <polygon points="0,0 100,100" />
-          <polygon points="0,100 100,0" />
-        </g>
+        {isEliminated ?
+          <g stroke="red" strokeWidth="2" fill={blockNation.darkTone}>
+            <polygon points="0,0 100,100" />
+            <polygon points="0,100 100,0" />
+          </g> : ""
+        }
         <text
           x="0"
           y="0"
@@ -100,7 +103,7 @@ export const BlockSvg = ({ id, nationLookup, nation, block, onClick, onContextMe
           textAnchor="middle"
           transform="translate(50,50)"
         >
-          ELIMINATED
+          { isEliminated ? "ELIMINATED" : "EMPTY" }
         </text>
       </svg>
     );

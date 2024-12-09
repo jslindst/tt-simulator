@@ -273,19 +273,24 @@ export type Force = {
 export type CombatRound = {
   attacker: "A" | "B",
   seaInvasion?: boolean,
-  hasDoWFirstFire?: boolean
+  hasDoWFirstFire?: boolean,
+  reinforcements?: {
+    A: Block[],
+    B: Block[]
+  }
 }
 
 export type Block = {
   name: string,
   strength: number,
-  nationName: string
+  nationName: string,
+  isInvading: boolean
 };
 
 export const force = (type: string, nationName: string, strength: number, amount: number = 1): Block[] => {
   const force: Block[] = [];
   for (var i = 0; i < amount; i++) {
-    force.push({ name: type, strength: strength, nationName: nationName });
+    force.push({ name: type, strength: strength, nationName: nationName, isInvading: false });
   }
   return force;
 }
@@ -384,12 +389,12 @@ function applyHits(targets: Block[], hits, targetType: UnitClass) {
 
     const highestPips = Math.max(...validTargets.map((target) => target.strength));
     if (LOG) console.log("Highest pips: " + highestPips);
-    
+
     const highestPipTargets = validTargets.filter(
       (target) => Number(target.strength) === highestPips
     );
     if (highestPipTargets.length === 0) {
-      if (LOG) console.log ("No targets available.");
+      if (LOG) console.log("No targets available.");
       break; // no targets available
     }
     // iterate through all the highest pip targets
@@ -471,7 +476,7 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
   if (totalForce === 0) return;
   if (LOG)
     console.log(
-      `Total hits: ${totalHits}/${totalForce} against ${targetBlocks[0].name}:${targetBlocks[0].strength}`
+      `Total hits: ${totalHits}/${totalForce} against ${targetUnitType}=${targetBlocks}`
     );
 }
 
@@ -486,7 +491,7 @@ export const simulate = (attacker: Force, defender: Force, combatRounds: CombatR
     var results = runBattle(
       JSON.parse(JSON.stringify(attacker)),
       JSON.parse(JSON.stringify(defender)),
-      combatRounds);
+      structuredClone(combatRounds));
     aggressionResults.push(results[0]);
     defensiveResults.push(results[1]);
   }
@@ -497,8 +502,18 @@ export const simulate = (attacker: Force, defender: Force, combatRounds: CombatR
 
 
 function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
+
+  // ensure empty forces
+  forceA.forces = [];
+  forceB.forces = [];
+
+
   combatRounds?.forEach((round, i) => {
     if (LOG) console.log(`Round ${i + 1}! -------------------------------------`);
+    if (LOG) console.log("Round", round);
+
+    forceA.forces.push(...round.reinforcements.A);
+    forceB.forces.push(...round.reinforcements.B);
 
     var attacker = forceA;
     var defender = forceB;
@@ -516,7 +531,7 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
 
       if (!(
         attacker.forces.find((block) => block?.name === activeUnitType.name) !== undefined ||
-        defender.forces.find((block) => block?.name === activeUnitType.name) !== undefined)) 
+        defender.forces.find((block) => block?.name === activeUnitType.name) !== undefined))
         return;
 
       if (LOG) console.log(`'${activeUnitType.name}' ====== "`);

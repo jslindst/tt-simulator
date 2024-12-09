@@ -119,7 +119,7 @@ const actionCardData = [["id", "Season", "Priority", "Value", "Influence1", "Inf
 [54, "Fall", "N", 6, "Czechoslovakia", "Finland", ""],
 [55, "Fall", "P", 6, "Turkey", "Persia", ""]];
 
-const SpecialActionCards = {
+export const SpecialActionCards = {
   "Birds of a Feather": {
     text: "Add 1 Friendly (or remove 1 Rival) Influence marker from one of the Neutral Nations listed after your Faction.",
     type: "add/remove",
@@ -137,10 +137,16 @@ const SpecialActionCards = {
   "Guarantee": {
     text: "Add 1 Friendly (or remove 1 Rival) Influence marker in any Neutral Nation adjacent to Friendly-controlled territory",
     type: "add/remove",
+    West: ["ADJACENT"],
+    Axis: ["ADJACENT"],
+    USSR: ["ADJACENT"],
   },
   "Foreign Aid": {
     text: "Reduce Friendly IND by 1 to add 1 Friendly (or remove 1 Rival) Influence marker in any Neutral Nation.",
     type: "add/remove",
+    West: ["IND-TO-INF"],
+    Axis: ["IND-TO-INF"],
+    USSR: ["IND-TO-INF"],
   },
   "Fear & Loathing": {
     text: "Remove a Rival Influence marker from one of the Neutral Nations listed after that Rival.",
@@ -165,7 +171,10 @@ const SpecialActionCards = {
   },
   "Intimidation": {
     text: "Add 1 Friendly (or remove 1 Rival) Influence marker in any Neutral Nation adjacent to Friendly-controlled Territory.",
-    type: "add/remove"
+    type: "add/remove",
+    West: ["ADJACENT"],
+    Axis: ["ADJACENT"],
+    USSR: ["ADJACENT"],
   },
   "Versailles": {
     text: "Add 1 Friendly (or remove 1 Rival) Influence marker from one of the Neutral Nations listed after your Faction.",
@@ -309,7 +318,7 @@ const cI = (hand: InvestmentCard[]): number => {
   }
 
   const results = findPairs(factoryCost, hand.map(card => card.Factory));
-  if (results.remainingNumbers?.reduce((val, n) => val + n ,0) >= factoryCost) {
+  if (results.remainingNumbers?.reduce((val, n) => val + n, 0) >= factoryCost) {
     const newResults = findPairs(factoryCost + 1, results.remainingNumbers);
     results.matches += newResults.matches;
     results.remainingNumbers = newResults.remainingNumbers;
@@ -354,7 +363,7 @@ function shuffle(array) {
 }
 
 
-function simulate(simulations: number, cardsToDraw: number, deck: any[]) {
+export function simulate(simulations: number, cardsToDraw: number, deck: any[]): any[] {
 
   const results = [];
 
@@ -378,8 +387,5 @@ function simulate(simulations: number, cardsToDraw: number, deck: any[]) {
 
   return results;
 }
-
-
-
 
 

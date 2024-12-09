@@ -23,7 +23,8 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Select from "@mui/material/Select";
 import Divider from "@mui/material/Divider";
 
-import { Nation } from "../model/HistoryTracker.ts";
+//import { cardTable } from "../model/cards.ts";
+
 import { groupByReduceFunction } from "../utils/utils.js";
 
 import { HelpDialogSlide } from "../components/HelpDialogSlide";
@@ -151,24 +152,28 @@ comments, suggestions in the{" "}
     </p></>);
 
 
-const VisualizeForce = ({
-  attacker,
+const VisualizeBlocks = ({
+  blocks,
   removeBlock,
   modifyBlock,
+  defaultNationName,
   canModify = true,
 }) => {
-  const nation = NationLookup[attacker.nationName];
+  if (blocks === undefined) return <p>No 'blocks' parameter missing.</p>
+  if (blocks === null) return <p>'blocks' parameter is null.</p>
+  if (defaultNationName === undefined || defaultNationName === null) return <p>No defaultNationName given.</p>
 
-  if (attacker?.forces === undefined || attacker.forces.length === 0) {
-    return <BlockSvg id={`${nation.name}-defeated`} key={0} nation={nation} />;
+  if (blocks.length === 0) {
+    return <BlockSvg emptyIsEliminated={!canModify}
+      id={`${defaultNationName}-defeated`} key={0} nation={NationLookup[defaultNationName]} />;
   }
-  return attacker?.forces?.map((unit, index) => {
+  return blocks?.map((block, index) => {
     return (
       <BlockSvg
-        id={`${nation.name}-${unit.name}-${unit.strength}`}
-        key={`${index}-${nation.name}-${unit.name}-${unit.strength}`}
+        id={`${block.nationName}-${block.name}-${block.strength}`}
+        key={`${index}-${block.nationName}-${block.name}-${block.strength}`}
         nationLookup={NationLookup}
-        block={unit}
+        block={block}
         onClick={(e) => {
           if (!canModify) return;
           if (e.shiftKey) modifyBlock(index, -1);
@@ -183,6 +188,60 @@ const VisualizeForce = ({
     );
   });
 };
+
+const ForceSelect = ({ force, removeBlocks, addBlock, removeBlock, modifyBlock }) => {
+  return <>
+    <IconButton onClick={removeBlocks}>
+      <HighlightOffIcon size="small" />
+    </IconButton>
+    <VisualizeBlocks
+      key="force"
+      blocks={force.forces}
+      defaultNationName={force.nationName}
+      removeBlock={removeBlock}
+      modifyBlock={modifyBlock}
+    />
+    <BlockSelect onSelect={addBlock} nationName={force.nationName} />
+  </>
+}
+
+const BlockSelect = ({ nationName, onSelect = () => { console.log("No 'onSelect' given.") } }) => {
+  return <FormControl size="small">
+    <Select
+      id="addBlock"
+      value=""
+      variant="filled"
+      IconComponent={AddIcon}
+      onChange={(e) => onSelect(e.target.value)}
+    >
+      {unitTable
+        .filter(
+          (unit) =>
+            NationLookup[nationName].units.indexOf(unit.shortName) !== -1
+        )
+        .map((unit, index) => {
+          return (
+            <MenuItem key={unit.name} value={unit.name}>
+              <BlockSvg
+                id={`${nationName}-${unit.name}-${NationLookup[nationName].maxPips(unit.name)}`}
+                key={`index${unit.name}`}
+                nationLookup={NationLookup}
+                block={{
+                  name: unit.name,
+                  nationName: nationName,
+                  strength: unit.special
+                    ? 10
+                    : NationLookup[nationName].maxPips(
+                      unit.name
+                    ),
+                }}
+              />
+            </MenuItem>
+          );
+        })}
+    </Select>
+  </FormControl>
+}
 
 const ForceStrength = ({ force }) => {
   const CV = force.forces
@@ -265,6 +324,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       return copy;
     });
   }
+
   function addBlock(unitType) {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
@@ -375,59 +435,11 @@ const ForcePanel = ({ attacker, onUpdate }) => {
           </Select>
         </FormControl>
       </ListItem>
+
       <ListItem disablePadding key="forces">
-        <IconButton onClick={removeBlocks}>
-          <HighlightOffIcon size="small" />
-        </IconButton>
-        <VisualizeForce
-          key="force"
-          attacker={forceA}
-          removeBlock={removeBlock}
-          modifyBlock={modifyBlock}
-        />
-        <ListItemText>
-          <FormControl size="small">
-            <Select
-              id="addBlock"
-              value=""
-              variant="filled"
-              IconComponent={AddIcon}
-              onChange={(e) => addBlock(e.target.value)}
-            >
-              {unitTable
-                .filter((unit) => unit.special === false || IND === 0)
-                .filter(
-                  (unit) =>
-                    NationLookup[forceA.nationName].units.indexOf(
-                      unit.shortName
-                    ) !== -1
-                )
-                .map((unit, index) => {
-                  return (
-                    <MenuItem key={unit.name} value={unit.name}>
-                      <BlockSvg
-                        id={`${forceA.nationName}-${unit.name}-${NationLookup[
-                          forceA.nationName
-                        ].maxPips(unit.name)}`}
-                        key={`index${unit.name}`}
-                        nationLookup={NationLookup}
-                        block={{
-                          name: unit.name,
-                          nationName: forceA.nationName,
-                          strength: unit.special
-                            ? 10
-                            : NationLookup[forceA.nationName].maxPips(
-                              unit.name
-                            ),
-                        }}
-                      />
-                    </MenuItem>
-                  );
-                })}
-            </Select>
-          </FormControl>
-        </ListItemText>
+        <ForceSelect force={forceA} removeBlocks={removeBlocks} addBlock={addBlock} removeBlock={removeBlock} modifyBlock={modifyBlock} />
       </ListItem>
+
       <ListItem disablePadding key="techs">
         <ListItemText primary="Technologies" />
         <FormControl size="small">
@@ -547,6 +559,10 @@ function Simulator() {
           attacker: round.charAt(0),
           hasDoWFirstFire: round.charAt(1) === "d",
           seaInvasion: round.charAt(2) === "s",
+          reinforcements: {
+            A: [],
+            B: []
+          }
         };
         return item;
       })
@@ -663,7 +679,22 @@ function Simulator() {
 
   function addCombatRound() {
     const copy = JSON.parse(JSON.stringify(combatRounds));
-    copy.push({ attacker: "A" });
+    copy.push(
+      {
+        attacker: "A",
+        reinforcements: {
+          A: [],
+          B: []
+        }
+      }
+    );
+    setCombatRounds(copy);
+    updateURL({ updateRounds: copy });
+  }
+
+  function updateCombatRound(index, roundData) {
+    const copy = JSON.parse(JSON.stringify(combatRounds));
+    copy[index] = roundData;
     setCombatRounds(copy);
     updateURL({ updateRounds: copy });
   }
@@ -702,14 +733,32 @@ function Simulator() {
     });
   }
 
+  function modifyBlockForRound(roundIndex, round, forceId) {
+    return (index, value) => {
+      const newRound = { ...round };
+      const block = newRound.reinforcements[forceId][index];
+      const nation = NationLookup[block.nationName];
+      var val = block.strength + 1;
+      if (!unitLookup[block.name].special) {
+        while (val <= 0) val += nation.maxPips(block.name);
+        while (val > nation.maxPips(block.name))
+          val -= nation.maxPips(block.name);
+      } else {
+        if (val <= 0) newRound.reinforcements[forceId].splice(index, 1);
+      }
+      block.strength = val;
+      updateCombatRound(roundIndex, newRound);
+    }
+  }
+
   return (
     <div className="App">
-      <SiteAppBar 
+      <SiteAppBar
         title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator v1.12"}
         help={<HelpDialogSlide
-        title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}
-        content={SIMULATOR_HELP_TEXT()}
-      />} />
+          title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}
+          content={SIMULATOR_HELP_TEXT()}
+        />} />
       <List>
         <ListItem key="forces">
           <Grid container spacing={0}>
@@ -743,27 +792,58 @@ function Simulator() {
             {combatRounds.map((round, index) => {
               return (
                 <ListItem key={index} disablePadding>
-                  <ListItemButton
-                    onClick={() =>
-                      setCombatRoundAttacker(
-                        index,
-                        round.attacker === "A" ? "B" : "A"
-                      )
-                    }
+
+                  <Grid
+                    component="label"
+                    container
+                    alignItems="center"
+                    spacing={1}
+                    columns={9}
                   >
-                    <Grid
-                      component="label"
-                      container
-                      alignItems="center"
-                      spacing={1}
-                    >
-                      <Grid item>{battleforceA.name}</Grid>
-                      <Grid item>
-                        {round.attacker === "A" ? <EastIcon /> : <WestIcon />}
-                      </Grid>
-                      <Grid item>{battleforceB.name}</Grid>
+                    <Grid item xs={4}>{battleforceA.name}</Grid>
+                    <Grid item xs={1}>
+                      <ListItemButton
+                        onClick={() =>
+                          setCombatRoundAttacker(
+                            index,
+                            round.attacker === "A" ? "B" : "A"
+                          )
+                        }
+                      >                        {round.attacker === "A" ? <EastIcon /> : <WestIcon />}
+                      </ListItemButton>
                     </Grid>
-                  </ListItemButton>
+                    <Grid item xs={4}>{battleforceB.name}</Grid>
+                    <Grid item xs={4}>
+                      <VisualizeBlocks
+                        modifyBlock={modifyBlockForRound(index, round, "A")}
+                        blocks={round.reinforcements?.A} defaultNationName={battleforceA.nationName} />
+                      <BlockSelect nationName={battleforceA.nationName} onSelect={unitType => {
+                        const nation = NationLookup[battleforceA.nationName];
+                        const strength = unitLookup[unitType].special ? 10 : nation.maxPips(unitType);
+                        const block = force(unitType, nation.name, strength)[0];
+                        const newRound = { ...round };
+                        newRound.reinforcements.A = [...round.reinforcements.A, block];
+                        updateCombatRound(index, newRound);
+                      }
+                      } />
+                    </Grid>
+                    <Grid item xs={1}></Grid>
+                    <Grid item xs={4}>
+                      <VisualizeBlocks
+                        modifyBlock={modifyBlockForRound(index, round, "B")}
+                        blocks={round.reinforcements?.B} defaultNationName={battleforceB.nationName} />
+                      <BlockSelect nationName={battleforceB.nationName} onSelect={unitType => {
+                        const nation = NationLookup[battleforceB.nationName];
+                        const strength = unitLookup[unitType].special ? 10 : nation.maxPips(unitType);
+                        const block = force(unitType, nation.name, strength)[0];
+                        const newRound = { ...round };
+                        newRound.reinforcements.B = [...round.reinforcements.B, block];
+                        updateCombatRound(index, newRound);
+                      }
+                      } />
+
+                    </Grid>
+                  </Grid>
                   <ListItemText>
                     <FormGroup>
                       <FormControlLabel
@@ -822,7 +902,7 @@ function Simulator() {
               <List>
                 {likelyResultsForA.map((res, index) => (
                   <ListItem key={index}>
-                    <VisualizeForce attacker={res.result} canModify={false} />
+                    <VisualizeBlocks blocks={res.result.forces} defaultNationName={res.result.nationName} canModify={false} />
                     <ListItemText>
                       <ForceStrength force={res.result} />
                       {" - "}
@@ -836,7 +916,7 @@ function Simulator() {
               <List>
                 {likelyResultsForB.map((res, index) => (
                   <ListItem key={index}>
-                    <VisualizeForce attacker={res.result} canModify={false} />
+                    <VisualizeBlocks blocks={res.result.forces} defaultNationName={res.result.nationName} canModify={false} />
                     <ListItemText>
                       <ForceStrength force={res.result} />
                       {" - "}

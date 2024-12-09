@@ -1,12 +1,8 @@
 import React from "react";
-import { useState, useRef } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import AppBar from "@mui/material/AppBar";
-import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import AddIcon from "@mui/icons-material/Add";
 
 //@ts-ignore
 import { territoriesByName as TERRITORIES_BY_NAME, factions as FACTIONS_BY_NAME, territoryList, Territory, Faction } from "../model/HistoryTracker.ts";
@@ -16,14 +12,11 @@ import styled from "styled-components";
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 
-import { useNavigate } from "react-router-dom";
 import { SiteAppBar } from "./SiteAppBar";
 
 const SEPARATORS = '|:='
 const CHAR_LOOKUP = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!#*';
 export const TERRITORIES_WITH_RESOURCES = Object.keys(TERRITORIES_BY_NAME).map(key => TERRITORIES_BY_NAME[key]).filter(terr => terr.hasResources());
-
-
 
 type ResourceTrackerState = {
   territoriesByName: any,
