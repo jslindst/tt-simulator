@@ -10,7 +10,7 @@ import AddIcon from "@mui/icons-material/Add";
 
 //@ts-ignore
 import { territoriesByName as TERRITORIES_BY_NAME, factions as FACTIONS_BY_NAME, territoryList, Territory, Faction } from "../model/HistoryTracker.ts";
-import FactionColumn from "../components/column";
+import FactionColumn from "../components/column.tsx";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import styled from "styled-components";
 import TextField from '@mui/material/TextField';

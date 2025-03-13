@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Draggable } from "@hello-pangea/dnd";
-import { Resource, Population, Capital } from "./TrackerIcons";
+import { Resource, Population, Capital } from "./TrackerIcons.tsx";
 import { Territory } from "../model/HistoryTracker.ts";
 import styled from "styled-components";
 import Chip from "@mui/material/Chip";
@@ -36,7 +36,7 @@ const Container = styled.div`
 `;
 
 export default class TerritoryItem extends React.Component {
-  render() {    
+  render() {
     const territory = new Territory(this.props.territory);
     return (
       <Draggable
@@ -54,11 +54,11 @@ export default class TerritoryItem extends React.Component {
           >
             <ItemName bold={territory.isCapital()}>{territory.name}<Capital territory={territory} /></ItemName>
             {territory.blockadeLevel === BlockadeLevel.MED && "(MED)"}
-            <ForcedDiv width="25px" style={{opacity: territory.blockadeLevel > 0 ? "20%" : "100%"}}><Population amount={territory.POP} /></ForcedDiv>
-            <ForcedDiv width="25px" style={{opacity: territory.blockadeLevel > 0 ? "20%" : "100%"}}><Resource amount={territory.RES} /></ForcedDiv>
-            <ForcedDiv width="25px" style={{opacity: territory.blockadeLevel > 1 ? "20%" : "100%"}}><Resource amount={territory.RESTransAfrica} color="red"/></ForcedDiv>
+            <ForcedDiv width="25px" style={{ opacity: territory.blockadeLevel > 0 ? "20%" : "100%" }}><Population amount={territory.POP} /></ForcedDiv>
+            <ForcedDiv width="25px" style={{ opacity: territory.blockadeLevel > 0 ? "20%" : "100%" }}><Resource amount={territory.RES} /></ForcedDiv>
+            <ForcedDiv width="25px" style={{ opacity: territory.blockadeLevel > 1 ? "20%" : "100%" }}><Resource amount={territory.RESTransAfrica} color="red" /></ForcedDiv>
             <ForcedDiv width="60px">
-            <Chip size="small" label={territory.nation.shortName} />
+              <Chip size="small" label={territory.nation.shortName} />
             </ForcedDiv>
           </Container>
         )}

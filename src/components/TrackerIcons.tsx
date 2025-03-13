@@ -1,5 +1,7 @@
+import React from "react";
+
 export const Resource = ({ amount, color = "black" }) => {
-  if (amount === 0) return "";
+  if (amount === 0) return <></>;
   return (<svg
     id="resource"
     width="25"
@@ -30,7 +32,7 @@ export const Resource = ({ amount, color = "black" }) => {
 };
 
 export const Population = ({ amount, color = "black" }) => {
-  if (amount === 0) return "";
+  if (amount === 0) return <></>;
   return (<svg
     id="resource"
     width="25"
@@ -63,10 +65,10 @@ export const Population = ({ amount, color = "black" }) => {
 
 
 export const Capital = ({ territory }) => {
-  if (!territory.isMainCapital() && !territory.isSubCapital()) return "";
+  if (!territory.isMainCapital() && !territory.isSubCapital()) return <></>
   return <svg
     id={territory.name}
-    style={{ marginLeft: "5px "}}
+    style={{ marginLeft: "5px " }}
     width="25"
     height="25"
     viewBox="0 0 100 100"

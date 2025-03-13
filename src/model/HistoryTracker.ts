@@ -66,6 +66,7 @@ export class Faction {
   name: string;
   IND: number;
   color: string;
+  darkTone: string;
   maxPips: any;
 
   constructor(obj) {
@@ -122,7 +123,7 @@ type BorderType = "Forest";
 const LandAreaData = [
   ["StartFaction", "Nation", "name", "CityType", "Capital", "Type", "RES", "RESTransAfrica", "POP", "Muster", "CardName", "NumberOfCards"],
   ["West", "Canada", "Ottawa", "Town", true, "Colony", 1, 0, 0, 1, "", 0, { "New York": "Forest", "North Atlantic Ocean": "Coast" }],
-  ["Neutral", "USA", "New York", "City", false, "USA", 2, 0, 1, 2, "", 0, { "Canada": "Forest", "Washington": "Plains", "North Atlantic Ocean": "Coast"}],
+  ["Neutral", "USA", "New York", "City", false, "USA", 2, 0, 1, 2, "", 0, { "Canada": "Forest", "Washington": "Plains", "North Atlantic Ocean": "Coast" }],
   ["Neutral", "USA", "Washington", "SubCapital", true, "USA", 2, 0, 2, 0, "USA", 5],
   ["Neutral", "Latin America", "Rio de Janeiro", "Town", true, "MinorNation", 2, 0, 0, 1, "", 0],
   ["Neutral", "Portugal", "Azores", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],

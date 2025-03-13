@@ -2,8 +2,9 @@ import React from "react";
 
 import { Droppable } from "@hello-pangea/dnd";
 import styled from "styled-components";
-import { Resource, Population } from "./TrackerIcons";
+import { Resource, Population } from "./TrackerIcons.tsx";
 import TerritoryItem from "./item.jsx";
+import { Faction, Territory } from "../model/HistoryTracker.js";
 
 const Container = styled.div`
   margin: 4px;
@@ -15,7 +16,7 @@ const Container = styled.div`
   flex-direction: column;
 `;
 
-const TerritoryList = styled.div`
+const TerritoryList = styled.div<{ isDraggingOver: boolean; faction: Faction }>`
   transition: background-color 0.2s ease;
   padding: 8px;
   background-color: ${props => (props.isDraggingOver ? props.faction.darkTone : props.faction.color)};
@@ -23,7 +24,15 @@ const TerritoryList = styled.div`
   min-height: 100px;
 `;
 
-export default class FactionColumn extends React.Component {
+interface FactionColumnProps {
+  faction: Faction;
+  isDropDisabled: boolean;
+  highlightedTerritories: Territory[];
+  addTerritoryField: React.ReactNode; // Correct type for React components/elements
+  blockadeUpdateFunction: (territory: Territory, blockadeLevel: number) => void;
+}
+
+export default class FactionColumn extends React.Component<FactionColumnProps> { // Use the interface here
   render() {
     const faction = this.props.faction;
 
@@ -61,8 +70,8 @@ export default class FactionColumn extends React.Component {
                   key={territory.name}
                   territory={territory}
                   index={index}
-                  highlight={highlights.indexOf(territory.name) !== -1}
-                  onClick={() => this.props.blockadeUpdateFunction(territory,territory.blockadeLevel)}
+                  highlight={highlights.find(terr => terr.name === territory.name)}
+                  onClick={() => this.props.blockadeUpdateFunction(territory, territory.blockadeLevel)}
                 />
               ))}
               {provided.placeholder}
