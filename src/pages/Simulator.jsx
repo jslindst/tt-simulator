@@ -23,11 +23,10 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Select from "@mui/material/Select";
 import Divider from "@mui/material/Divider";
 
-import { Nation } from "../model/HistoryTracker.ts";
 import { groupByReduceFunction } from "../utils/utils.js";
 
 import { HelpDialogSlide } from "../components/HelpDialogSlide";
-import { BlockSvg } from "../components/BlockSvg";
+import { BlockSvg } from "../components/BlockSvg.tsx";
 
 import { AttackOrderList } from "../components/AttackOrderList.js";
 
