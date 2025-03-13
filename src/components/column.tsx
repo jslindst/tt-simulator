@@ -3,8 +3,8 @@ import React from "react";
 import { Droppable } from "@hello-pangea/dnd";
 import styled from "styled-components";
 import { Resource, Population } from "./TrackerIcons.tsx";
-import TerritoryItem from "./item.jsx";
 import { Faction, Territory } from "../model/HistoryTracker.js";
+import { TerritoryItem } from "./item.tsx";
 
 const Container = styled.div`
   margin: 4px;
@@ -70,7 +70,7 @@ export default class FactionColumn extends React.Component<FactionColumnProps> {
                   key={territory.name}
                   territory={territory}
                   index={index}
-                  highlight={highlights.find(terr => terr === territory.name)}
+                  highlight={!!highlights.find(terr => terr === territory.name)}
                   onClick={() => this.props.blockadeUpdateFunction(territory, territory.blockadeLevel)}
                 />
               ))}
