@@ -29,7 +29,7 @@ type ResourceTrackerState = {
   territoriesByName: any,
   factionsByName: any,
   order: string[],
-  highlightedTerritories: Territory[],
+  highlightedTerritories: string[],
   originFaction?: any
 };
 
@@ -119,7 +119,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
 
   onDragStart = start => {
     const territory = TERRITORIES_BY_NAME[start.draggableId];
-    const highlighted = [];
+    const highlighted: string[] = [];
     console.log(territory);
     if (territory.isCapital()) {
       territory.nation.territories.filter(
@@ -127,7 +127,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
       ).forEach(terr => highlighted.push(terr.name))
     }
 
-    const newState = {
+    const newState: ResourceTrackerState = {
       ...this.state,
       originFaction: start.source.droppableId,
       highlightedTerritories: highlighted

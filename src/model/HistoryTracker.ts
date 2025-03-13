@@ -377,7 +377,7 @@ export class Nation {
 
 const areasByNation = groupByReduceFunction(landAreaTable, area => area.Nation);
 
-export const territoriesByName = {};
+export const territoriesByName: { [key: string]: Territory } = {};
 export const territoryList: Territory[] = [];
 const nationsByName = {};
 Object.keys(areasByNation).forEach(key => {

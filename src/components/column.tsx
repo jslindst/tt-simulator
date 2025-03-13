@@ -27,7 +27,7 @@ const TerritoryList = styled.div<{ isDraggingOver: boolean; faction: Faction }>`
 interface FactionColumnProps {
   faction: Faction;
   isDropDisabled: boolean;
-  highlightedTerritories: Territory[];
+  highlightedTerritories: string[];
   addTerritoryField: React.ReactNode; // Correct type for React components/elements
   blockadeUpdateFunction: (territory: Territory, blockadeLevel: number) => void;
 }
@@ -70,7 +70,7 @@ export default class FactionColumn extends React.Component<FactionColumnProps> {
                   key={territory.name}
                   territory={territory}
                   index={index}
-                  highlight={highlights.find(terr => terr.name === territory.name)}
+                  highlight={highlights.find(terr => terr === territory.name)}
                   onClick={() => this.props.blockadeUpdateFunction(territory, territory.blockadeLevel)}
                 />
               ))}
