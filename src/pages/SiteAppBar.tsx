@@ -6,46 +6,20 @@ import MenuIcon from '@mui/icons-material/Menu';
 import IconButton from '@mui/material/IconButton';
 
 import * as React from 'react';
-import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useNavigate } from "react-router-dom";
 
-
-/*
-const useStyles = makeStyles((theme) => ({
-  root: {
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  minHeight: {
-    minHeight: "5px !important",
-  },
-  smallTypo: {
-    fontSize: "5px"
-  }
-}));
-*/
-
 export const SiteAppBar = (props) => {
-
   let navigate = useNavigate();
-
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  const handleClose = () => { setAnchorEl(null); };
 
-  const goTo = (url) => {
-    navigate(url);
-    //    navigate(0);
-  }
+  const goTo = (url) => { navigate(url); }
 
   return (
     <Box sx={{ flexGrow: 1 }}>

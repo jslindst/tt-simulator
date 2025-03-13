@@ -17,7 +17,7 @@ import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 
 import { useNavigate } from "react-router-dom";
-import { SiteAppBar } from "./SiteAppBar";
+import { SiteAppBar } from "./SiteAppBar.tsx";
 
 const SEPARATORS = '|:='
 const CHAR_LOOKUP = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!#*';

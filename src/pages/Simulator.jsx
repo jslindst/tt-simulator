@@ -50,7 +50,7 @@ import {
 import React from "react";
 import Plot from "react-plotly.js";
 import { Tooltip } from "@mui/material";
-import { SiteAppBar } from "./SiteAppBar";
+import { SiteAppBar } from "./SiteAppBar.tsx";
 
 const STANDARD_ATTACK_ORDER = [
   "MAX",
@@ -92,29 +92,29 @@ const SIMULATOR_HELP_TEXT = () => (
     <p>
       Here you can simulate the battles over one or more combat rounds for
       two opposing forces.
-</p>
+    </p>
 
     <p>
       <b>BattleForce</b> - <b>Click</b> add pip, <b>Shift+Click</b> remove
-pip, <b>Right Click</b> remove block
-</p>
+      pip, <b>Right Click</b> remove block
+    </p>
 
     <p>
       <b>Target Class Priority</b> - This defines the unit classes of the
-opposing force that are targeted when units are firing. <b>MAX</b>{" "}
-aims to always target the class that has the highest chance of
-success.
-<b>Units will skip priorities which they cannot hit.</b> (ie. Tanks
-will not try to fire at Air Force even when A is the left most
-(highest) priority. <b>IND</b> is industry.
-</p>
+      opposing force that are targeted when units are firing. <b>MAX</b>{" "}
+      aims to always target the class that has the highest chance of
+      success.
+      <b>Units will skip priorities which they cannot hit.</b> (ie. Tanks
+      will not try to fire at Air Force even when A is the left most
+      (highest) priority. <b>IND</b> is industry.
+    </p>
 
     <p>
       <b>Combat Rounds</b> - You can add several combat rounds to the
-simulation, including defining which side initiates the attack (by
-clicking and switching the arrow). For the first round also DoW and
-SeaInvasion can be simulated.
-</p>
+      simulation, including defining which side initiates the attack (by
+      clicking and switching the arrow). For the first round also DoW and
+      SeaInvasion can be simulated.
+    </p>
 
     <p>
       <b>Known issues</b>
@@ -124,30 +124,30 @@ SeaInvasion can be simulated.
       <li>
         Retreats: Not currently simulated. Thus also the carrier evade is
         not simulated.
-</li>
+      </li>
       <li>
         Target Class Priority: Convoys are not separately targetable.
-</li>
+      </li>
       <li>
         Target Class Priority: MAX targets the opposing unit class with
         highest chance of hitting, not damaging - ie. double hits are not
         considered.
-</li>
+      </li>
       <li>
         Battlegroups: Currently only one battlegroup is possible on each
         side, so reinforcements or multiple battlegroups joining are not
         simulated.
-</li>
+      </li>
       <li>CnC - Kamikaze: Option not implemented.</li>
     </ul>
 
     <p>
       This simulator was written by kijoe. Please post bugs, feedback,
-comments, suggestions in the{" "}
+      comments, suggestions in the{" "}
       <a href="https://boardgamegeek.com/thread/2931896/combat-simulator-tragedy-triumph">
         BGG Forums here
-</a>
-.{" "}
+      </a>
+      .{" "}
     </p></>);
 
 
@@ -704,12 +704,12 @@ function Simulator() {
 
   return (
     <div className="App">
-      <SiteAppBar 
+      <SiteAppBar
         title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator v1.12"}
         help={<HelpDialogSlide
-        title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}
-        content={SIMULATOR_HELP_TEXT()}
-      />} />
+          title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}
+          content={SIMULATOR_HELP_TEXT()}
+        />} />
       <List>
         <ListItem key="forces">
           <Grid container spacing={0}>
