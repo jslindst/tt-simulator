@@ -267,7 +267,7 @@ export type Force = {
   forces: Block[],
   attackOrder: AttackOrder,
   reduceOrder?: string[],
-  technologies?: string[], // technames
+  technologies: string[], // technames
 }
 
 export type CombatRound = {
@@ -384,12 +384,12 @@ function applyHits(targets: Block[], hits, targetType: UnitClass) {
 
     const highestPips = Math.max(...validTargets.map((target) => target.strength));
     if (LOG) console.log("Highest pips: " + highestPips);
-    
+
     const highestPipTargets = validTargets.filter(
       (target) => Number(target.strength) === highestPips
     );
     if (highestPipTargets.length === 0) {
-      if (LOG) console.log ("No targets available.");
+      if (LOG) console.log("No targets available.");
       break; // no targets available
     }
     // iterate through all the highest pip targets
@@ -478,14 +478,14 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
 export const simulate = (attacker: Force, defender: Force, combatRounds: CombatRound[], rolls = 1) => {
   LOG = false;
 
-  const aggressionResults = [];
-  const defensiveResults = [];
+  const aggressionResults: Force[] = [];
+  const defensiveResults: Force[] = [];
   for (var i = 0; i < rolls; i++) {
     if (i === 0) LOG = false;
     else LOG = false;
     var results = runBattle(
-      JSON.parse(JSON.stringify(attacker)),
-      JSON.parse(JSON.stringify(defender)),
+      structuredClone(attacker),
+      structuredClone(defender),
       combatRounds);
     aggressionResults.push(results[0]);
     defensiveResults.push(results[1]);
@@ -516,17 +516,17 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
 
       if (!(
         attacker.forces.find((block) => block?.name === activeUnitType.name) !== undefined ||
-        defender.forces.find((block) => block?.name === activeUnitType.name) !== undefined)) 
+        defender.forces.find((block) => block?.name === activeUnitType.name) !== undefined))
         return;
 
       if (LOG) console.log(`'${activeUnitType.name}' ====== "`);
 
 
       var attackerFFs = 0;
-      if (attacker.technologies?.filter((item) => TechLookup[item]?.firstFire === activeUnitType.name).length > 0) attackerFFs++;
+      if (attacker.technologies.filter((item) => TechLookup[item]?.firstFire === activeUnitType.name).length > 0) attackerFFs++;
 
       var defenderFFs = 0;
-      if (defender.technologies?.filter((item) => TechLookup[item]?.firstFire === activeUnitType.name).length > 0) defenderFFs++;
+      if (defender.technologies.filter((item) => TechLookup[item]?.firstFire === activeUnitType.name).length > 0) defenderFFs++;
 
       var goesFirst = defender;
       var goesSecond = attacker;

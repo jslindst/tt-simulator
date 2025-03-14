@@ -45,6 +45,8 @@ import {
   stringToBlocks,
   stringToTechs,
   techsToString,
+  Force,
+  CombatRound,
 } from "../model/battle.ts";
 import React from "react";
 import Plot from "react-plotly.js";
@@ -60,23 +62,24 @@ const STANDARD_ATTACK_ORDER = [
   UnitClassType.I,
 ];
 
-const initialDefenderTnT = {
+const initialDefenderTnT: Force = {
   name: "BattleForce B",
   attackOrder: [...STANDARD_ATTACK_ORDER],
   forces: [...force("Infantry", "Axis", 4), ...force("Infantry", "Axis", 4)],
   //forces: [...force("Fleet", 4, 2)],
   nationName: "Axis",
   //nationName: "Japanese (CnC)",
+  technologies: []
 };
 
-const initialAttackerTnT = {
+const initialAttackerTnT: Force = {
   name: "BattleForce A",
   //forces: [...force("Fleet", 4, 2)],
   forces: [...force("Tank", "West", 3, 3)],
   attackOrder: [...STANDARD_ATTACK_ORDER],
   reduceOrder: ["Tank", "Infantry", "Fortress", "Fleet", "Carrier", "Convoy"],
-  DoW: false,
   nationName: "West",
+  technologies: []
 };
 
 const SIMULATOR_HELP_TEXT = () => (
@@ -152,8 +155,8 @@ const SIMULATOR_HELP_TEXT = () => (
 
 const VisualizeForce = ({
   attacker,
-  removeBlock,
-  modifyBlock,
+  removeBlock = (index) => { },
+  modifyBlock = (index, change) => { },
   canModify = true,
 }) => {
   const nation = NationLookup[attacker.nationName];
@@ -376,7 +379,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       </ListItem>
       <ListItem disablePadding key="forces">
         <IconButton onClick={removeBlocks}>
-          <HighlightOffIcon size="small" />
+          <HighlightOffIcon />
         </IconButton>
         <VisualizeForce
           key="force"
@@ -525,7 +528,7 @@ function Simulator() {
   initializeFromString(AForceString, initialAttackerTnT);
   initializeFromString(BForceString, initialDefenderTnT);
 
-  const initialCombatRounds = [];
+  const initialCombatRounds: CombatRound[] = [];
 
   const formatCombatRoundsString = (combatRounds) => {
     return combatRounds.map((round) => {
@@ -613,7 +616,7 @@ function Simulator() {
       (a, b) => Aresults[b].length - Aresults[a].length
     );
 
-    const examples = [];
+    const examples: { result: Force, count: number }[] = [];
     for (var i = 0; i < number && i < hashesSorted.length; i++) {
       examples.push({
         result: Aresults[hashesSorted[i]][0],
@@ -723,7 +726,6 @@ function Simulator() {
         <Divider />
         <ListItem key="combatRounds">
           <List
-            md={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
             component="nav"
             aria-labelledby="nested-list-subheader"
           >
@@ -731,7 +733,7 @@ function Simulator() {
               <ListItemText>
                 <b>Combat Rounds in simulation ({combatRounds.length})</b>
                 <IconButton onClick={() => addCombatRound()}>
-                  <AddCircleIcon size="small" />
+                  <AddCircleIcon />
                 </IconButton>
                 <span className="instruction">
                   (Combat Round involves an exchange of fire between both sides,
@@ -770,7 +772,6 @@ function Simulator() {
                         control={
                           <Checkbox
                             disabled={index !== 0}
-                            label="test"
                             checked={round.hasDoWFirstFire}
                             onChange={() => setDoW(!round.hasDoWFirstFire)}
                           />
@@ -786,7 +787,6 @@ function Simulator() {
                         control={
                           <Checkbox
                             disabled={index !== 0}
-                            label="test"
                             checked={round.seaInvasion}
                             onChange={() =>
                               setSeaInvasion(index, !round.seaInvasion)
