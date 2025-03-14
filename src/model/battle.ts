@@ -311,8 +311,6 @@ export type UnitTypeInfo = {
   CnC: boolean
 }
 
-
-
 var LOG = true;
 const unitData = [
   ["id", "shortName", "name", "priority", "class", "move", UnitClassType.A, UnitClassType.N, UnitClassType.G, UnitClassType.S, UnitClassType.I, "takesDouble", "special", "canFirstFire", "TnT", "CnC", "ignoreSeaInvasion"],
@@ -329,22 +327,20 @@ const unitData = [
   [10, "I", UnitName.Industry, 100, UnitClassType.I, 0, 0, 0, 0, 0, 0, false, true, false, true, true, false],
 ];
 
-
-
 //@ts-ignore
-const header: string = unitData.shift();
+const header: string[] = unitData.shift();
 export const unitTable: UnitTypeInfo[] = []
-export const unitLookup = {};
+export const unitLookup: { [key: string]: UnitTypeInfo } = {};
 unitData.forEach((data) => {
 
-  //@ts-ignore
-  const unit: UnitTypeInfo = {};
+  const unit: UnitTypeInfo = header.reduce((acc, key, i) => {
+    //@ts-ignore
+    acc[key as keyof UnitTypeInfo] = data[i];
+    return acc;
+  }, {} as UnitTypeInfo); // Start with an empty object of type UnitTypeInfo
 
-  for (var i = 0; i < header.length; i++) {
-    unit[header[i]] = data[i];
-  }
+  unitLookup[unit.name] = unit;
 
-  //@ts-ignore
   unitLookup[unit.name] = unit;
   unitLookup[unit.shortName] = unit;
 
@@ -359,16 +355,16 @@ unitData.forEach((data) => {
 });
 unitTable.sort((A, B) => A.priority - B.priority);
 
-function roll() {
+function roll(): number {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function attack(strength: number, hitOn: number) {
+function attack(strength: number, hitOn: number): number {
   const rolls = Array.from(Array(strength)).map((val) => roll());
   return rolls.filter((val) => val <= hitOn).length;
 }
 
-function applyHits(targets: Block[], hits, targetType: UnitClass) {
+function applyHits(targets: Block[], hits: number, targetType: UnitClass) {
   if (LOG) console.log(`applying ${hits} hits to ${targets.map(block => block.name + ":" + block.strength).join(",")} where type is ${targetType}`);
   if (hits === 0) return;
 
@@ -387,7 +383,8 @@ function applyHits(targets: Block[], hits, targetType: UnitClass) {
 
     const highestPipTargets = validTargets.filter(
       (target) => Number(target.strength) === highestPips
-    );
+    ).sort((a, b) => ((unitLookup[a.name].takesDouble ? 1 : 0) - (unitLookup[b.name].takesDouble ? 1 : 0)));
+
     if (highestPipTargets.length === 0) {
       if (LOG) console.log("No targets available.");
       break; // no targets available
@@ -406,7 +403,6 @@ function applyHits(targets: Block[], hits, targetType: UnitClass) {
     }
   }
 }
-
 
 function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrder, technologies: string[]) {
   const firingUnit = unitLookup[firingBlock.name];
@@ -453,7 +449,6 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
 
   if (LOG) console.log("firing block nation", firingUnitNation);
 
-
   const multipliers = techs?.map(tech => {
     if (tech.attackMultiplier === undefined) return null;
     if (tech.attackMultiplier[firingBlock.name] === undefined) return null;
@@ -494,17 +489,12 @@ export const simulate = (attacker: Force, defender: Force, combatRounds: CombatR
   return [aggressionResults, defensiveResults];
 }
 
-
-
 function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
   combatRounds?.forEach((round, i) => {
     if (LOG) console.log(`Round ${i + 1}! -------------------------------------`);
 
     var attacker = forceA;
     var defender = forceB;
-
-    //    attacker.forces.forEach(block => block.nationName = attacker.nationName);
-    //    defender.forces.forEach(block => block.nationName = defender.nationName);
 
     if ("B" === round.attacker) {
       defender = forceA;
@@ -520,7 +510,6 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
         return;
 
       if (LOG) console.log(`'${activeUnitType.name}' ====== "`);
-
 
       var attackerFFs = 0;
       if (attacker.technologies.filter((item) => TechLookup[item]?.firstFire === activeUnitType.name).length > 0) attackerFFs++;

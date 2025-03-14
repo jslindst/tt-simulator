@@ -155,8 +155,8 @@ const SIMULATOR_HELP_TEXT = () => (
 
 const VisualizeForce = ({
   attacker,
-  removeBlock = (index) => { },
-  modifyBlock = (index, change) => { },
+  removeBlock = (index: number) => { },
+  modifyBlock = (index: number, change: number) => { },
   canModify = true,
 }) => {
   const nation = NationLookup[attacker.nationName];
@@ -209,7 +209,7 @@ const ForceTitle = ({ force }) => {
   );
 };
 
-const validateBlocks = (force) => {
+const validateBlocks = (force: Force) => {
   const nation = NationLookup[force.nationName];
 
   force.forces.forEach((block) => {
@@ -310,10 +310,8 @@ const ForcePanel = ({ attacker, onUpdate }) => {
 
   const toRichText = (value) => {
     if (value === undefined || value === null) return "";
-    //@ts-ignore
     var texts = value.split("\n").filter((text) => text.trim().length > 0);
     if (texts.length === 0) return "";
-    //@ts-ignore
     return (
       <>
         {texts.map((text, index) => (
@@ -513,7 +511,7 @@ function Simulator() {
     }
   };
 
-  const formatForceString = (force) => {
+  const formatForceString = (force: Force) => {
     return (
       techsToString(force.technologies) +
       "!" +
