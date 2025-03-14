@@ -23,7 +23,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Select from "@mui/material/Select";
 import Divider from "@mui/material/Divider";
 
-import { groupByReduceFunction } from "../utils/utils.js";
+import { groupByReduceFunction } from "../utils/utils.ts";
 
 import { HelpDialogSlide } from "../components/HelpDialogSlide.tsx";
 import { BlockSvg } from "../components/BlockSvg.tsx";
@@ -604,7 +604,7 @@ function Simulator() {
     simulations
   );
 
-  function findExample(resultData, number = 1) {
+  function findExample(resultData: Force[], number = 1) {
     const Aresults = groupByReduceFunction(resultData, (result) => {
       return result.forces.reduce((hash, block) => {
         return hash + Math.pow(24, unitLookup[block.name].id) * block.strength;

@@ -1,5 +1,4 @@
-import { groupByReduceFunction } from "../utils/utils.js";
-//@ts-ignore
+import { groupByReduceFunction } from "../utils/utils.ts";
 import { Nations } from "./battle.ts";
 
 export const BlockadeLevel = {
@@ -8,7 +7,12 @@ export const BlockadeLevel = {
   FULL: 2
 }
 
-const countryNameToAcronym = {
+type VisualIdentity = {
+  name: string
+  color: string
+}
+
+const countryNameToAcronym: { [key: string]: VisualIdentity } = {
   "Canada": { name: "CA", color: 'rgb(29,176,223)' },
   "USA": { name: "US", color: 'rgb(136,190,128)' },
   "Latin America": { name: "LA", color: 'rgb(191,169,125)' },
@@ -62,7 +66,6 @@ export type LandArea = {
 }
 
 export class Faction {
-
   name: string;
   IND: number;
   color: string;
@@ -116,9 +119,6 @@ export const factions = {
   USSR: new Faction(Nations[2]),
   Neutral: new Faction(Nations[1])
 }
-
-type BorderType = "Forest";
-
 
 const LandAreaData = [
   ["StartFaction", "Nation", "name", "CityType", "Capital", "Type", "RES", "RESTransAfrica", "POP", "Muster", "CardName", "NumberOfCards"],
@@ -233,7 +233,6 @@ export const landAreaTable: LandArea[] = []
 export const landAreaLookup = {};
 
 LandAreaData.forEach((data) => {
-
   //@ts-ignore
   const area: LandArea = {};
 
