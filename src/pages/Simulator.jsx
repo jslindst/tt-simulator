@@ -25,7 +25,7 @@ import Divider from "@mui/material/Divider";
 
 import { groupByReduceFunction } from "../utils/utils.js";
 
-import { HelpDialogSlide } from "../components/HelpDialogSlide";
+import { HelpDialogSlide } from "../components/HelpDialogSlide.tsx";
 import { BlockSvg } from "../components/BlockSvg.tsx";
 
 import { AttackOrderList } from "../components/AttackOrderList.js";

@@ -4,14 +4,27 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
-import Slide from "@mui/material/Slide";
+import Slide, { SlideProps } from "@mui/material/Slide";
+import { TransitionProps } from "@mui/material/transitions";
 
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
+// Transition component now wraps the dialog content
+const Transition = React.forwardRef<HTMLDivElement, TransitionProps>(
+  function Transition(props: TransitionProps, ref: React.ForwardedRef<HTMLDivElement>) {
+    return (
+      <Slide direction="up" ref={ref} {...props}>
+        {/* Wrap children in a div.  Slide *requires* a single child. */}
+        <div>{props.children}</div>
+      </Slide>
+    );
+  }
+);
 
+interface HelpDialogSlideProps {
+  title: React.ReactNode;
+  content: React.ReactNode;
+}
 
-export const HelpDialogSlide = (props) => {
+export const HelpDialogSlide: React.FC<HelpDialogSlideProps> = (props) => {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -27,7 +40,7 @@ export const HelpDialogSlide = (props) => {
       <Button color="inherit" onClick={handleClickOpen}>Help</Button>
       <Dialog
         open={open}
-        TransitionComponent={Transition}
+        TransitionComponent={Transition} // Use our custom transition
         keepMounted
         onClose={handleClose}
       >
@@ -39,5 +52,4 @@ export const HelpDialogSlide = (props) => {
       </Dialog>
     </div>
   );
-}
-
+};
