@@ -28,7 +28,7 @@ import { groupByReduceFunction } from "../utils/utils.js";
 import { HelpDialogSlide } from "../components/HelpDialogSlide.tsx";
 import { BlockSvg } from "../components/BlockSvg.tsx";
 
-import { AttackOrderList } from "../components/AttackOrderList.js";
+import { AttackOrderList } from "../components/AttackOrderList.tsx";
 
 import "../App.css";
 import {

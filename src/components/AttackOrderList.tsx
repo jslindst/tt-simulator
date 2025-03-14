@@ -1,84 +1,100 @@
 import React, { Component } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+  DraggableProvided, // Corrected type import
+  DraggableStateSnapshot,
+  DroppableProvided, // Corrected type import
+  DroppableStateSnapshot
+} from '@hello-pangea/dnd';
 
-// a little function to help us with reordering the result
-const reorder = (list, startIndex, endIndex) => {
+// --- Helper Functions ---
+
+const reorder = <T,>(list: T[], startIndex: number, endIndex: number): T[] => {
   const result = Array.from(list);
   const [removed] = result.splice(startIndex, 1);
   result.splice(endIndex, 0, removed);
-
   return result;
 };
 
 const grid = 4;
 
-const getItemStyle = (isDragging, draggableStyle) => ({
-  // some basic styles to make the items look a bit nicer
+// --- Style Functions (Inline Styles) ---
+
+const getItemStyle = (isDragging: boolean, draggableStyle: React.CSSProperties | undefined) => ({ //Corrected
   userSelect: 'none',
   padding: grid * 2,
   margin: `0 ${grid}px 0 0`,
-
-  // change background colour if dragging
   background: isDragging ? 'lightgreen' : 'grey',
-
-  // styles we need to apply on draggables
   ...draggableStyle,
-});
+} as React.CSSProperties);
 
-const getListStyle = isDraggingOver => ({
+const getListStyle = (isDraggingOver: boolean) => ({
   background: isDraggingOver ? 'lightblue' : 'lightgrey',
   display: 'flex',
   padding: grid,
   overflow: 'auto',
-});
+} as React.CSSProperties);
 
-export class AttackOrderList extends Component {
-  constructor(props) {
+// --- Component Props and State ---
+
+interface AttackOrderListProps {
+  items: string[];
+  onOrderChanged: (newOrder: string[]) => void;
+}
+
+interface AttackOrderListState {
+  itemsList: { id: string; content: string }[];
+}
+
+// --- Component ---
+
+export class AttackOrderList extends Component<AttackOrderListProps, AttackOrderListState> {
+  constructor(props: AttackOrderListProps) {
     super(props);
-    this.itemsList = props.items.map(item => { return { id: item, content: item }});
+    this.state = {
+      itemsList: props.items.map(item => ({ id: item, content: item })),
+    };
     this.onDragEnd = this.onDragEnd.bind(this);
-    this.onOrderChanged = props.onOrderChanged;
   }
 
-  onDragEnd(result) {
-    // dropped outside the list
+  onDragEnd = (result: DropResult) => {
     if (!result.destination) {
       return;
     }
 
     const items = reorder(
-      this.itemsList,
+      this.state.itemsList,
       result.source.index,
       result.destination.index
     );
 
-    this.itemsList = items;
-    console.log("onDragEnd", items);
-    this.onOrderChanged(items.map(item => item.content));
-  }
+    this.setState({ itemsList: items });
+    this.props.onOrderChanged(items.map(item => item.content));
+  };
 
-  // Normally you would want to split things out into separate components.
-  // But in this example everything is just done in one place for simplicity
   render() {
     return (
       <DragDropContext onDragEnd={this.onDragEnd}>
         <Droppable droppableId="droppable" direction="horizontal">
-          {(provided, snapshot) => (
+          {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => ( // Corrected type
             <div
               ref={provided.innerRef}
               style={getListStyle(snapshot.isDraggingOver)}
               {...provided.droppableProps}
             >
-              {this.itemsList.map((item, index) => (
+              {this.state.itemsList.map((item, index) => (
                 <Draggable key={item.id} draggableId={item.id} index={index}>
-                  {(provided, snapshot) => (
+                  {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => ( // Corrected type
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
                       style={getItemStyle(
                         snapshot.isDragging,
-                        provided.draggableProps.style
+                        provided.draggableProps.style  //No cast needed
                       )}
                     >
                       {item.content}
