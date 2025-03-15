@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import MapVisualization, { Point, Region, MapData, RegionStyle, VertexStyle } from './MapVisualization.tsx';
+import MapVisualization, { Point, Region, MapData, RegionStyle, VertexStyle, MapMouseEvent } from './MapVisualization.tsx';
 
 type Mode = 'none' | 'add' | 'move' | 'delete' | 'create-region' | 'select-region' | 'split-edge'; // Added split-edge mode
 
 
 // --- Region Selection and Editing ---
-const findRegionAtPoint = (data: MapData, x: number, y: number): string | null => {
+export const findRegionAtPoint = (data: MapData, x: number, y: number): Region | null => {
   for (let i = data.regions.length - 1; i >= 0; i--) {
     const region = data.regions[i];
     let points: Point[] = region.vertices.map(vertexId => data.vertices.find(v => v.id === vertexId)).filter((vertex): vertex is Point => vertex !== undefined);
     if (isPointInPolygon(x, y, points)) {
-      return region.id;
+      return region;
     }
   }
   return null;
@@ -87,12 +87,8 @@ const MapEditor: React.FC = () => {
   }, [currentRegionVertices, vertices]);
 
   // --- Event Handlers ---
-  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = event.target as HTMLCanvasElement;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+  const handleCanvasClick = (event: MapMouseEvent) => {
+    const { x, y } = event;
 
     if (mode === 'add') {
       const newVertex: Point = { x, y, id: generateVertexId() };
@@ -148,20 +144,22 @@ const MapEditor: React.FC = () => {
         }
       }
     } else if (mode === 'select-region') {
-      const clickedRegionId = findRegionAtPoint({ vertices, regions }, x, y);
-      setSelectedRegionId(clickedRegionId);
-      if (clickedRegionId) {
-        let region = regions.find(r => r.id == clickedRegionId);
+      const clickedRegion = findRegionAtPoint({ vertices, regions }, x, y);
+      if (clickedRegion) {
+        setSelectedRegionId(clickedRegion.id);
+        let region = regions.find(r => r.id == clickedRegion.id);
         if (region) {
           setEditedRegionName(region.name);
         }
+      } else {
+        setSelectedRegionId(null);
       }
     } else if (mode === 'split-edge') {
       splitEdgeAtPoint(x, y);
     }
   };
 
-  const handleCanvasMouseUp = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasMouseUp = (event: MapMouseEvent) => {
     if (mode === 'create-region') {
       // Finish drawing (but don't close unless clicked on the first vertex or Esc is pressed)
 
@@ -172,13 +170,8 @@ const MapEditor: React.FC = () => {
     }
   };
 
-  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = event.target as HTMLCanvasElement;
-
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+  const handleCanvasMouseMove = (event: MapMouseEvent) => {
+    const { x, y } = event;
 
     if (mode !== 'select-region' && mode !== 'split-edge') {
       const closestVertexId = findClosestVertexId(x, y);

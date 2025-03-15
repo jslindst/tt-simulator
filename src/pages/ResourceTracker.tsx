@@ -3,10 +3,9 @@ import { useState } from "react";
 
 import Button from "@mui/material/Button";
 
-//@ts-ignore
 import { territoriesByName as TERRITORIES_BY_NAME, factions as FACTIONS_BY_NAME, Territory } from "../model/HistoryTracker.ts";
 import FactionColumn from "../components/column.tsx";
-import { DragDropContext } from "@hello-pangea/dnd";
+import { DragDropContext, DragStart, DragUpdate } from "@hello-pangea/dnd";
 import styled from "styled-components";
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -14,11 +13,8 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { useNavigate } from "react-router-dom";
 import { SiteAppBar } from "./SiteAppBar.tsx";
 
-const SEPARATORS = '|:='
 const CHAR_LOOKUP = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!#*';
 export const TERRITORIES_WITH_RESOURCES = Object.keys(TERRITORIES_BY_NAME).map(key => TERRITORIES_BY_NAME[key]).filter(terr => terr.hasResources());
-
-
 
 type ResourceTrackerState = {
   territoriesByName: any,
@@ -91,10 +87,16 @@ function ResetButton() {
   );
 }
 
+function territoryToChar(territory: Territory) {
+  return CHAR_LOOKUP.charAt(TERRITORIES_WITH_RESOURCES.findIndex(item => territory.name === item.name));
+}
+
+function charToTerritory(char: string) {
+  return TERRITORIES_WITH_RESOURCES[CHAR_LOOKUP.indexOf(char)];
+}
 
 
 class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
-
 
   createInitState() {
     const initState = stateStructure;
@@ -112,7 +114,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
     }
   }
 
-  onDragStart = start => {
+  onDragStart = (start: DragStart) => {
     const territory = TERRITORIES_BY_NAME[start.draggableId];
     const highlighted: string[] = [];
     console.log(territory);
@@ -127,27 +129,20 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
       originFaction: start.source.droppableId,
       highlightedTerritories: highlighted
     };
-    //console.log("onDragStart", newState);
     this.setState(newState)
   }
 
-  territoryToChar(territory: Territory) {
-    return CHAR_LOOKUP.charAt(TERRITORIES_WITH_RESOURCES.findIndex(item => territory.name === item.name));
-  }
 
-  charToTerritory(char: string) {
-    return TERRITORIES_WITH_RESOURCES[CHAR_LOOKUP.indexOf(char)];
-  }
 
   createOccupiedStateString(stateObject: ResourceTrackerState) {
     const occupiedString = Object.keys(stateObject.factionsByName).map(id => {
       return FACTIONS_BY_NAME[id].territoriesWithResources().filter(terr => terr.isOccupied())
-        .map(terr => this.territoryToChar(terr))
+        .map(terr => territoryToChar(terr))
         .join('');
     }).join("|");
     const oneBlockade = Object.keys(stateObject.territoriesByName).map(id => stateObject.territoriesByName[id]).filter(terr => terr.blockadeLevel === 1);
     const twoBlockade = Object.keys(stateObject.territoriesByName).map(id => stateObject.territoriesByName[id]).filter(terr => terr.blockadeLevel === 2);
-    return `${occupiedString}:${oneBlockade.map(terr => this.territoryToChar(terr)).join('')}=${twoBlockade.map(terr => this.territoryToChar(terr)).join('')}`;
+    return `${occupiedString}:${oneBlockade.map(terr => territoryToChar(terr)).join('')}=${twoBlockade.map(terr => territoryToChar(terr)).join('')}`;
   }
 
   applyOccupiedStateString(stateObject, string) {
@@ -162,15 +157,15 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
     Object.keys(stateObject.factionsByName).forEach((factionKey, index) => {
       const faction = stateObject.factionsByName[factionKey];
       occupiedAreas[index].split('').forEach(char => {
-        const territory = this.charToTerritory(char);
+        const territory = charToTerritory(char);
         stateObject.territoriesByName[territory.name].occupy(faction);
       })
     });
     if (split.length > 1) {
       const blockadeParts = split[1].split("=");
       if (blockadeParts.length < 2) return stateObject;
-      blockadeParts[0].split('').forEach(char => stateObject.territoriesByName[this.charToTerritory(char).name].blockadeLevel = 1);
-      blockadeParts[1].split('').forEach(char => stateObject.territoriesByName[this.charToTerritory(char).name].blockadeLevel = 2);
+      blockadeParts[0].split('').forEach(char => stateObject.territoriesByName[charToTerritory(char).name].blockadeLevel = 1);
+      blockadeParts[1].split('').forEach(char => stateObject.territoriesByName[charToTerritory(char).name].blockadeLevel = 2);
     }
 
 
@@ -201,7 +196,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
     this.updateTerritories(state);
   }
 
-  onDragEnd = (result) => {
+  onDragEnd = (result: DragUpdate) => {
     const newState = {
       ...this.state,
       originFaction: null,
