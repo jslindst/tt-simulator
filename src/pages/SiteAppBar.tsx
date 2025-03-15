@@ -10,16 +10,16 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useNavigate } from "react-router-dom";
 
-export const SiteAppBar = (props) => {
+export const SiteAppBar: React.FC<{ title: string, actionButton?: any, help?: any }> = (props) => {
   let navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
-  const handleClick = (event) => {
+  const handleClick = (event: any) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => { setAnchorEl(null); };
 
-  const goTo = (url) => { navigate(url); }
+  const goTo = (url: string) => { navigate(url); }
 
   return (
     <Box sx={{ flexGrow: 1 }}>

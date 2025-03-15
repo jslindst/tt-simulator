@@ -1,5 +1,5 @@
-import { groupByReduceFunction } from "../utils/utils.ts";
-import { Nations } from "./battle.ts";
+import { groupByReduceFunction } from "../utils/utils";
+import { Nations, NationType } from "./battle";
 
 export const BlockadeLevel = {
   NONE: 0,
@@ -51,7 +51,7 @@ export const countryVisualIdentity: { [key: string]: VisualIdentity } = {
   "Middle East": { name: "ME", color: 'rgb(144,203,230)' },
 }
 
-export type LandArea = {
+export interface LandAreaData {
   name: string,
   StartFaction: string,
   Nation: string,
@@ -62,7 +62,8 @@ export type LandArea = {
   POP: number,
   Muster: number,
   CardName: string,
-  NumberOfCards: number
+  NumberOfCards: number,
+  Type: TerritoryType
 }
 
 export class Faction {
@@ -70,11 +71,14 @@ export class Faction {
   IND: number;
   color: string;
   darkTone: string;
-  maxPips: any;
+  maxPips?: (unitName: string) => number;
 
-  constructor(obj) {
-    Object.assign(this, obj);
+  constructor(nation: NationType) {
+    this.name = nation.name
+    this.color = nation.color
+    this.darkTone = nation.darkTone
     this.maxPips = undefined;
+    this.IND = 10
   }
 
   territories(): Territory[] {
@@ -113,7 +117,7 @@ export class Faction {
 
 }
 
-export const factions = {
+export const factions: { [key: string]: Faction } = {
   Axis: new Faction(Nations[0]),
   West: new Faction(Nations[3]),
   USSR: new Faction(Nations[2]),
@@ -122,8 +126,8 @@ export const factions = {
 
 const LandAreaData = [
   ["StartFaction", "Nation", "name", "CityType", "Capital", "Type", "RES", "RESTransAfrica", "POP", "Muster", "CardName", "NumberOfCards"],
-  ["West", "Canada", "Ottawa", "Town", true, "Colony", 1, 0, 0, 1, "", 0, { "New York": "Forest", "North Atlantic Ocean": "Coast" }],
-  ["Neutral", "USA", "New York", "City", false, "USA", 2, 0, 1, 2, "", 0, { "Canada": "Forest", "Washington": "Plains", "North Atlantic Ocean": "Coast" }],
+  ["West", "Canada", "Ottawa", "Town", true, "Colony", 1, 0, 0, 1, "", 0],
+  ["Neutral", "USA", "New York", "City", false, "USA", 2, 0, 1, 2, "", 0],
   ["Neutral", "USA", "Washington", "SubCapital", true, "USA", 2, 0, 2, 0, "USA", 5],
   ["Neutral", "Latin America", "Rio de Janeiro", "Town", true, "MinorNation", 2, 0, 0, 1, "", 0],
   ["Neutral", "Portugal", "Azores", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
@@ -229,21 +233,25 @@ const LandAreaData = [
 
 // @ts-ignore
 const header: string[] = LandAreaData.shift();
-export const landAreaTable: LandArea[] = []
-export const landAreaLookup: { [key: string]: LandArea } = {};
+export const landAreaTable: LandAreaData[] = []
+export const landAreaLookup: { [key: string]: LandAreaData } = {};
 
 LandAreaData.forEach((data) => {
-  //@ts-ignore
-  const area: LandArea = {};
+  const area: Partial<LandAreaData> = {};
 
   for (var i = 0; i < header.length; i++) {
+    //@ts-ignore
     area[header[i]] = data[i];
   }
 
   //@ts-ignore
   landAreaLookup[area.name] = area;
-  landAreaTable.push(area);
+  landAreaTable.push(area as LandAreaData);
 });
+
+type CityType = "MainCapital" | "SubCapital" | "City" | "Town" | "-"
+
+type TerritoryType = "GreatPower" | "Colony" | "MajorPower" | "MinorNation"
 
 export class Territory {
   id: string;
@@ -252,17 +260,31 @@ export class Territory {
   homeTerritoryOf: Faction;
   nation: Nation;
   RES: number;
-  RESTransAfrica;
+  RESTransAfrica: number;
   POP: number;
-  CityType: string;
+  CityType: CityType;
   StartFaction: string;
-  Type: string;
-  blockadeLevel: any = BlockadeLevel.NONE;
+  Type: TerritoryType;
+  blockadeLevel: number = BlockadeLevel.NONE;
+  landArea: LandAreaData;
 
-  constructor(obj: LandArea, nation?: Nation) {
-    Object.assign(this, obj);
-    if (nation !== null && nation !== undefined) this.nation = nation;
-    this.homeTerritoryOf = factions[this.StartFaction];
+  constructor(landArea: LandAreaData, nation: Nation) {
+    this.landArea = landArea;
+    this.id = `t${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    this.name = landArea.name;
+    this.RES = landArea.RES;
+    this.RESTransAfrica = landArea.RESTransAfrica;
+    this.POP = landArea.POP;
+    this.CityType = landArea.CityType;
+    this.StartFaction = landArea.StartFaction;
+    this.Type = landArea.Type;
+
+    //Default values for Territory that LandArea does not have:
+    this.controller = factions.Neutral; // Or some other default, as appropriate
+    this.blockadeLevel = BlockadeLevel.NONE;
+
+    this.nation = nation;
+    this.homeTerritoryOf = factions[this.StartFaction]; //Important, it requires StartFaction to be assigned first
   }
 
   isGreatPowerHomeTerritory(): boolean {
@@ -325,15 +347,16 @@ export class Nation {
   capital: Territory;
   influence: Faction[] = [];
 
-  constructor(name: string, territories: LandArea[]) {
+  constructor(name: string, territories: LandAreaData[]) {
     this.name = name;
     this.shortName = countryVisualIdentity[name].name;
     this.color = countryVisualIdentity[name].color;
     if (this.shortName === null || this.shortName === undefined) throw new Error(`No acronym found for ${this.name}`);
     this.territories = territories.map(area => new Territory(area, this));
-    //@ts-ignore
-    this.capital = this.territories.find(area => area.Capital);
-    if (this.capital === null || this.capital === undefined) throw new Error(`${name} does not have a capital in ${territories}`);
+
+    const capital = this.territories.find(area => area.landArea.Capital);
+    if (!capital) throw new Error(`Nation '${name}' does not have a capital in ${territories}`);
+    this.capital = capital;
   }
 
   setInfluence(faction: Faction) {
@@ -371,19 +394,16 @@ export class Nation {
   isNeutral(): boolean {
     return this.resourcesForFaction() === factions.Neutral;
   }
-
 }
 
 const areasByNation = groupByReduceFunction(landAreaTable, area => area.Nation);
 
 export const territoriesByName: { [key: string]: Territory } = {};
 export const territoryList: Territory[] = [];
-const nationsByName = {};
+const nationsByName: { [key: string]: Nation } = {};
 Object.keys(areasByNation).forEach(key => {
   const nation = new Nation(key, areasByNation[key]);
-  //@ts-ignore
   if (nation.capital.StartFaction) {
-    //@ts-ignore
     nation.capital.controller = factions[nation.capital.StartFaction];
   }
   nationsByName[key] = nation;

@@ -43,9 +43,9 @@ interface MapVisualizationProps {
   getVertexStyle?: (vertex: Point) => VertexStyle;
   showLabels?: boolean;
   customRenderFunctions?: ((ctx: CanvasRenderingContext2D) => void)[];
-  onClick?: (event: MapMouseEvent) => void;  // Changed event type
-  onMouseMove?: (event: MapMouseEvent) => void; // Changed event type
-  onMouseUp?: (event: MapMouseEvent) => void;   // Changed event type
+  onClick?: (event: MapMouseEvent) => void;
+  onMouseMove?: (event: MapMouseEvent) => void;
+  onMouseUp?: (event: MapMouseEvent) => void;
   cursor?: string;
   width?: number | string;
   height?: number | string;

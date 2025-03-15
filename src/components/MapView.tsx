@@ -1,14 +1,25 @@
-import React from 'react';
-import MapVisualization, { MapMouseEvent, Point, Region, RegionStyle, VertexStyle } from './MapVisualization.tsx';
-import { findNeighboringRegions, mapData } from '../mapData.ts';
-import { SiteAppBar } from '../pages/SiteAppBar.tsx';
-import { countryVisualIdentity, landAreaLookup } from '../model/HistoryTracker.ts';
-import { findRegionAtPoint } from './MapEditor.tsx';
+import React, { useState } from 'react';
+import MapVisualization, { MapMouseEvent, Point, Region, RegionStyle, VertexStyle } from './MapVisualization';
+import { SiteAppBar } from '../pages/SiteAppBar';
+import { countryVisualIdentity, landAreaLookup } from '../model/HistoryTracker';
+import { findRegionAtPoint } from './MapEditor';
+import { findNeighboringRegions, mapData } from 'mapData';
 
 // Example component that uses MapVisualization to display map data
 const MapView: React.FC = () => {
+
+  const [selected, setSelected] = useState<(Region | undefined)[]>([])
+
   // Example function to determine how regions should be colored
   function getRegionColor(region: Region): RegionStyle {
+
+    if (selected.find(r => r?.id === region.id)) {
+      return {
+        fillColor: 'rgba(255,255,255,1)',
+        drawColor: 'rgba(0, 0, 0)',
+        drawWidth: 6
+      }
+    }
 
     const landArea = landAreaLookup[region.name];
     if (!landArea) return {
@@ -16,6 +27,7 @@ const MapView: React.FC = () => {
       drawColor: 'rgba(0, 0, 0)',
       drawWidth: 2
     }
+
     const color = countryVisualIdentity[landArea.Nation].color
 
     return {
@@ -39,7 +51,8 @@ const MapView: React.FC = () => {
 
     const regionClicked = findRegionAtPoint(mapData, x, y)
     if (!regionClicked) return;
-    console.log(regionClicked);
+    const neighbors = neighborLookup[regionClicked.name]
+    setSelected(neighbors.map(neighbor => (mapData.regions.find(r => r.name === neighbor))))
   }
   return (
     <div>

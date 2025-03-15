@@ -3,25 +3,25 @@ import { useState } from "react";
 
 import Button from "@mui/material/Button";
 
-import { territoriesByName as TERRITORIES_BY_NAME, factions as FACTIONS_BY_NAME, Territory } from "../model/HistoryTracker.ts";
-import FactionColumn from "../components/column.tsx";
+import { territoriesByName as TERRITORIES_BY_NAME, factions as FACTIONS_BY_NAME, Territory, Faction } from "../model/HistoryTracker";
+import FactionColumn from "../components/column";
 import { DragDropContext, DragStart, DragUpdate } from "@hello-pangea/dnd";
 import styled from "styled-components";
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 
 import { useNavigate } from "react-router-dom";
-import { SiteAppBar } from "./SiteAppBar.tsx";
+import { SiteAppBar } from "./SiteAppBar";
 
 const CHAR_LOOKUP = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!#*';
 export const TERRITORIES_WITH_RESOURCES = Object.keys(TERRITORIES_BY_NAME).map(key => TERRITORIES_BY_NAME[key]).filter(terr => terr.hasResources());
 
 type ResourceTrackerState = {
-  territoriesByName: any,
-  factionsByName: any,
+  territoriesByName: { [key: string]: Territory },
+  factionsByName: { [key: string]: Faction },
   order: string[],
   highlightedTerritories: string[],
-  originFaction?: any
+  originFaction: string | null
 };
 
 const stateStructure: ResourceTrackerState = {
@@ -29,15 +29,18 @@ const stateStructure: ResourceTrackerState = {
   factionsByName: FACTIONS_BY_NAME,
   order: Object.keys(FACTIONS_BY_NAME),
   highlightedTerritories: [],
+  originFaction: null
 };
 
 
-function AddTerritoryField({ territoryList, onAddTerritory }) {
+const AddTerritoryField: React.FC<{ territoryList: Territory[], onAddTerritory: (territory: Territory) => void }> = ({ territoryList, onAddTerritory }) => {
 
   const [toClearProperty, setToClearProperty] = useState("");
 
-  const onKeyPress = (e) => {
+  const onKeyPress = (e: React.KeyboardEvent) => {
     if (e.keyCode == 13) {
+
+      //@ts-ignore FIX
       const territoryName = e.target.value.replace(/\(.*$/, "");
       console.log(territoryName);
       const matches = territoryList.filter(terr => {
@@ -103,7 +106,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
     return initState;
   }
 
-  constructor(props) {
+  constructor(props: any) {
     super(props);
     this.state = this.createInitState();
     var locationMatch = window.location.search.match(/^\?([a-z0-9#!*|:=%]+)$/i);
@@ -145,7 +148,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
     return `${occupiedString}:${oneBlockade.map(terr => territoryToChar(terr)).join('')}=${twoBlockade.map(terr => territoryToChar(terr)).join('')}`;
   }
 
-  applyOccupiedStateString(stateObject, string) {
+  applyOccupiedStateString(stateObject: ResourceTrackerState, string: string) {
     console.log("APPLY")
     const split = string.split(":");
 
@@ -172,7 +175,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
     return stateObject;
   }
 
-  blockadeAndUpdate = (territory, blockadeLevel, state = this.state) => {
+  blockadeAndUpdate = (territory: Territory, blockadeLevel: number, state = this.state) => {
     if (territory.isNeutral() && !territory.isOccupied()) territory.blockadeLevel = 0;
     else territory.blockadeLevel = blockadeLevel + 1;
     if (territory.blockadeLevel > 1 && territory.RESTransAfrica === 0) territory.blockadeLevel = 0;
@@ -191,7 +194,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
   }
 
 
-  occupyAndUpdate = (territory, occupier, state = this.state) => {
+  occupyAndUpdate = (territory: Territory, occupier: Faction, state = this.state) => {
     territory.occupy(occupier);
     this.updateTerritories(state);
   }

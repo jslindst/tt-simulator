@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import MapVisualization, { Point, Region, MapData, RegionStyle, VertexStyle, MapMouseEvent } from './MapVisualization.tsx';
+import MapVisualization, { Point, Region, MapData, RegionStyle, VertexStyle, MapMouseEvent } from './MapVisualization';
 
 type Mode = 'none' | 'add' | 'move' | 'delete' | 'create-region' | 'select-region' | 'split-edge'; // Added split-edge mode
 

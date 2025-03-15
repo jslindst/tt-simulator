@@ -1,7 +1,7 @@
 import React from "react";
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from "@hello-pangea/dnd";
-import { Resource, Population, Capital } from "./TrackerIcons.tsx";
-import { Territory, BlockadeLevel } from "../model/HistoryTracker.ts";  // Assuming this is correct
+import { Resource, Population, Capital } from "./TrackerIcons";
+import { Territory, BlockadeLevel } from "../model/HistoryTracker";  // Assuming this is correct
 import styled from "styled-components";
 import Chip from "@mui/material/Chip";
 // import List from "@mui/material/List"; // Not used, so removed

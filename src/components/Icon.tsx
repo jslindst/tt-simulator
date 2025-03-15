@@ -1,10 +1,12 @@
 // Icon.tsx
 import React from 'react';
-import { UnitName } from '../model/battle.ts';
+import { UnitName } from '../model/battle';
+//@ts-ignore
 import BattleshipIcon from "./noun-battleship-44759.svg";
+//@ts-ignore
 import AirForceIcon from "./spitfire.svg";
+//@ts-ignore
 import SubIcon from "./noun-submarine-1189639.svg";
-// ... other imports
 
 interface IconProps {
   unitName: string;

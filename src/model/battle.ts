@@ -101,7 +101,7 @@ export const Technologies: Technology[] = [
   },
   { shortName: "po", name: "Precision Optics", edition: "CnC", selectable: false },
 ];
-export const TechLookup = {}
+export const TechLookup: { [key: string]: Technology } = {}
 Technologies.forEach(tech => TechLookup[tech.name] = tech);
 Technologies.forEach(tech => TechLookup[tech.shortName] = tech);
 
@@ -110,18 +110,16 @@ export const techsToString = (techs: string[]): string => {
 }
 
 export const stringToTechs = (string: string): string[] => {
-  return string.split("|").filter(str => str !== '').map(str => {
-    try {
-      return TechLookup[str].name;
-    } catch (e) {
-      console.log(`Trying to read technology '${str}', but failed.`);
-      return null;
-    }
-  }).filter(item => item !== null);
+  const techs: string[] = []
+  string.split("|").forEach(str => {
+    if (!str || str.length === 0) return;
+    techs.push(TechLookup[str].name)
+  })
+  return techs;
 }
 
 const stringToBlock = (string: string): Block => {
-  const nation = NationLookup[string.charAt(0)];
+  const nation = NationTypeLookup[string.charAt(0)];
   const unit = unitLookup[string.charAt(1)];
   const strength = Number(string.substring(2));
   //@ts-ignore
@@ -130,7 +128,7 @@ const stringToBlock = (string: string): Block => {
 }
 
 export const blocksToString = (blocks: Block[]): string => {
-  return blocks.map(block => NationLookup[block.nationName].shortName + unitLookup[block.name].shortName + block.strength).join("|");
+  return blocks.map(block => NationTypeLookup[block.nationName].shortName + unitLookup[block.name].shortName + block.strength).join("|");
 }
 
 export const stringToBlocks = (string: string): Block[] => {
@@ -156,21 +154,20 @@ export const UnitClassType = {
 }
 
 
-export type Nation = {
+export type NationType = {
   name: string,
   shortName: string,
   color: string,
   pipColor: string,
   darkTone: string,
-  maxPips: any,
+  maxPips: (unitName: string) => number,
   edition: string
   specialTechnologies?: string[],
   description?: string,
   units: string
 }
 
-
-export const Nations: Nation[] = [
+export const Nations: NationType[] = [
   {
     name: "Axis",
     shortName: "a",
@@ -251,12 +248,12 @@ export const Nations: Nation[] = [
     units: "facsFtimMCI"
   },
 ];
-export const NationLookup = {}
-Nations.forEach(nation => NationLookup[nation.name] = nation);
-Nations.forEach(nation => NationLookup[nation.shortName] = nation);
+export const NationTypeLookup: { [key: string]: NationType } = {}
+Nations.forEach(nation => NationTypeLookup[nation.name] = nation);
+Nations.forEach(nation => NationTypeLookup[nation.shortName] = nation);
 
 
-const unitClasses = [UnitClassType.G, UnitClassType.A, UnitClassType.N, UnitClassType.S, UnitClassType.I] as const;
+const unitClasses = [UnitClassType.G, UnitClassType.A, UnitClassType.N, UnitClassType.S, UnitClassType.I];
 export type UnitClass = typeof unitClasses[number];
 
 export type AttackOrder = (UnitClass | "MAX")[];
@@ -272,7 +269,7 @@ export type Force = {
 
 export type CombatRound = {
   attacker: "A" | "B",
-  seaInvasion?: boolean,
+  seaInvasion: boolean,
   hasDoWFirstFire?: boolean
 }
 
@@ -347,7 +344,7 @@ unitData.forEach((data) => {
   unit.preferredOrder = unitClasses.map((type) => {
     return {
       unitType: type,
-      firepower: unit[type]
+      firepower: unit[type as keyof UnitTypeInfo] as number
     }
   }
   ).sort((a, b) => b.firepower - a.firepower).map(item => item.unitType);
@@ -406,11 +403,11 @@ function applyHits(targets: Block[], hits: number, targetType: UnitClass) {
 
 function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrder, technologies: string[]) {
   const firingUnit = unitLookup[firingBlock.name];
-  const firingUnitNation = NationLookup[firingBlock.nationName];
+  const firingUnitNation = NationTypeLookup[firingBlock.nationName];
 
-  const toHitTable = {}
+  const toHitTable: { [key: string]: number } = {}
 
-  unitClasses.forEach(unitClass => { toHitTable[unitClass] = firingUnit[unitClass] });
+  unitClasses.forEach(unitClass => { toHitTable[unitClass] = firingUnit[unitClass as keyof UnitTypeInfo] as number });
 
   const techs: Technology[] = [];
   if (firingUnitNation.specialTechnologies) techs.push(...firingUnitNation.specialTechnologies.map(name => TechLookup[name]));
@@ -521,8 +518,8 @@ function runBattle(forceA: Force, forceB: Force, combatRounds: CombatRound[]) {
 
       // if neither has FFs then give the japanese player first fire
       if (attackerFFs === 0 && defenderFFs === 0 && activeUnitType.name === UnitName.Fleet) {
-        attackerFFs += NationLookup[attacker.nationName].specialTechnologies?.find(tech => tech === "Precision Optics") ? 1 : 0;
-        defenderFFs += NationLookup[defender.nationName].specialTechnologies?.find(tech => tech === "Precision Optics") ? 1 : 0;
+        attackerFFs += NationTypeLookup[attacker.nationName].specialTechnologies?.find(tech => tech === "Precision Optics") ? 1 : 0;
+        defenderFFs += NationTypeLookup[defender.nationName].specialTechnologies?.find(tech => tech === "Precision Optics") ? 1 : 0;
       }
 
       // give DoW bonus to attacker

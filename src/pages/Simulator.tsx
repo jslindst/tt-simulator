@@ -23,14 +23,12 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Select from "@mui/material/Select";
 import Divider from "@mui/material/Divider";
 
-import { groupByReduceFunction } from "../utils/utils.ts";
+import { groupByReduceFunction } from "../utils/utils";
 
-import { HelpDialogSlide } from "../components/HelpDialogSlide.tsx";
-import { BlockSvg } from "../components/BlockSvg.tsx";
+import { HelpDialogSlide } from "../components/HelpDialogSlide";
+import { BlockSvg } from "../components/BlockSvg";
 
-import { AttackOrderList } from "../components/AttackOrderList.tsx";
-import MapVisualization from "../components/MapVisualization";
-import { mapData } from "../mapData";
+import { AttackOrderList } from "../components/AttackOrderList";
 
 import "../App.css";
 import {
@@ -40,7 +38,7 @@ import {
   unitLookup,
   UnitClassType,
   Nations,
-  NationLookup,
+  NationTypeLookup,
   UnitName,
   Technologies,
   blocksToString,
@@ -49,11 +47,13 @@ import {
   techsToString,
   Force,
   CombatRound,
-} from "../model/battle.ts";
+  AttackOrder,
+} from "../model/battle";
 import React from "react";
+//@ts-ignore
 import Plot from "react-plotly.js";
 import { Tooltip } from "@mui/material";
-import { SiteAppBar } from "./SiteAppBar.tsx";
+import { SiteAppBar } from "./SiteAppBar";
 
 const STANDARD_ATTACK_ORDER = [
   "MAX",
@@ -155,23 +155,23 @@ const SIMULATOR_HELP_TEXT = () => (
     </p></>);
 
 
-const VisualizeForce = ({
+const VisualizeForce: React.FC<{ attacker: Force, removeBlock?: (index: number) => void, modifyBlock?: (index: number, change: number) => void, canModify?: boolean }> = ({
   attacker,
   removeBlock = (index: number) => { },
   modifyBlock = (index: number, change: number) => { },
   canModify = true,
 }) => {
-  const nation = NationLookup[attacker.nationName];
+  const nation = NationTypeLookup[attacker.nationName];
 
   if (attacker?.forces === undefined || attacker.forces.length === 0) {
     return <BlockSvg id={`${nation.name}-defeated`} key={0} nation={nation} />;
   }
-  return attacker?.forces?.map((unit, index) => {
+  return <>{attacker?.forces?.map((unit, index) => {
     return (
       <BlockSvg
         id={`${nation.name}-${unit.name}-${unit.strength}`}
         key={`${index}-${nation.name}-${unit.name}-${unit.strength}`}
-        nationLookup={NationLookup}
+        nationLookup={NationTypeLookup}
         block={unit}
         onClick={(e) => {
           if (!canModify) return;
@@ -184,11 +184,13 @@ const VisualizeForce = ({
           removeBlock(index);
         }}
       />
-    );
-  });
+    )
+  })}</>
 };
 
-const ForceStrength = ({ force }) => {
+
+
+const ForceStrength: React.FC<{ force: Force }> = ({ force }) => {
   const CV = force.forces
     .filter((item) => item.name !== UnitName.Industry)
     .reduce((total, item) => total + item.strength, 0);
@@ -203,7 +205,7 @@ const ForceStrength = ({ force }) => {
   );
 };
 
-const ForceTitle = ({ force }) => {
+const ForceTitle: React.FC<{ force: Force }> = ({ force }) => {
   return (
     <>
       {force.name} <ForceStrength force={force} />
@@ -212,7 +214,7 @@ const ForceTitle = ({ force }) => {
 };
 
 const validateBlocks = (force: Force) => {
-  const nation = NationLookup[force.nationName];
+  const nation = NationTypeLookup[force.nationName];
 
   force.forces.forEach((block) => {
     if (unitLookup[block.name].special) return;
@@ -223,12 +225,16 @@ const validateBlocks = (force: Force) => {
   );
   return force;
 };
+interface ForcePanelProps {
+  attacker: Force;
+  onUpdate: (updater: (old: Force) => Force) => void; // Correct prop type
+}
 
-const ForcePanel = ({ attacker, onUpdate }) => {
-  function changeNation(index) {
+const ForcePanel: React.FC<ForcePanelProps> = ({ attacker, onUpdate }) => {
+  function changeNation(index: number) {
     onUpdate((old) => {
-      const copy = JSON.parse(JSON.stringify(old));
-      const oldNation = NationLookup[copy.nationName];
+      const copy: Force = JSON.parse(JSON.stringify(old));
+      const oldNation = NationTypeLookup[copy.nationName];
       const newNation = Nations[index];
       copy.nationName = newNation.name;
       copy.forces.forEach((block) => (block.nationName = newNation.name));
@@ -238,13 +244,13 @@ const ForcePanel = ({ attacker, onUpdate }) => {
 
   function removeBlocks() {
     onUpdate((old) => {
-      const copy = JSON.parse(JSON.stringify(old));
+      const copy: Force = JSON.parse(JSON.stringify(old));
       copy.forces = [];
       return copy;
     });
   }
 
-  function removeBlock(index) {
+  function removeBlock(index: number) {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
       copy.forces.splice(index, 1);
@@ -252,11 +258,11 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     });
   }
 
-  function modifyBlock(index, value) {
+  function modifyBlock(index: number, value: number) {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
       const block = copy.forces[index];
-      const nation = NationLookup[copy.nationName];
+      const nation = NationTypeLookup[copy.nationName];
       var val = block.strength + value;
       if (!unitLookup[block.name].special) {
         while (val <= 0) val += nation.maxPips(block.name);
@@ -269,11 +275,11 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       return copy;
     });
   }
-  function addBlock(unitType) {
+  function addBlock(unitType: string) {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
 
-      const nation = NationLookup[copy.nationName];
+      const nation = NationTypeLookup[copy.nationName];
       const strength = unitLookup[unitType].special
         ? 10
         : nation.maxPips(unitType);
@@ -282,7 +288,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     });
   }
 
-  function addTechnology(tech) {
+  function addTechnology(tech: string) {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
       if (copy.technologies === undefined) copy.technologies = [];
@@ -292,15 +298,15 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     });
   }
 
-  function updateAttackOrder(order) {
+  function updateAttackOrder(order: AttackOrder) {
     onUpdate((old) => {
-      const copy = JSON.parse(JSON.stringify(old));
+      const copy: Force = JSON.parse(JSON.stringify(old));
       copy.attackOrder = order;
       return copy;
     });
   }
 
-  function removeTechnology(tech) {
+  function removeTechnology(tech: string) {
     onUpdate((old) => {
       const copy = JSON.parse(JSON.stringify(old));
       const index = copy.technologies.indexOf(tech);
@@ -310,9 +316,9 @@ const ForcePanel = ({ attacker, onUpdate }) => {
     });
   }
 
-  const toRichText = (value) => {
+  const toRichText = (value: string) => {
     if (value === undefined || value === null) return "";
-    var texts = value.split("\n").filter((text) => text.trim().length > 0);
+    var texts: string[] = value.split("\n").filter((text) => text.trim().length > 0);
     if (texts.length === 0) return "";
     return (
       <>
@@ -324,7 +330,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
   };
 
   const forceA = attacker;
-  const nation = NationLookup[attacker.nationName];
+  const nation = NationTypeLookup[attacker.nationName];
 
   const CV = forceA.forces
     .filter((item) => item.name !== "Industry")
@@ -365,7 +371,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
             value={Nations.map((nation) => nation.name).indexOf(
               forceA.nationName
             )}
-            onChange={(e) => changeNation(e.target.value)}
+            onChange={(e) => changeNation(Number(e.target.value))}
           >
             {Nations.map((nation, index) => {
               return (
@@ -400,7 +406,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
                 .filter((unit) => unit.special === false || IND === 0)
                 .filter(
                   (unit) =>
-                    NationLookup[forceA.nationName].units.indexOf(
+                    NationTypeLookup[forceA.nationName].units.indexOf(
                       unit.shortName
                     ) !== -1
                 )
@@ -408,17 +414,17 @@ const ForcePanel = ({ attacker, onUpdate }) => {
                   return (
                     <MenuItem key={unit.name} value={unit.name}>
                       <BlockSvg
-                        id={`${forceA.nationName}-${unit.name}-${NationLookup[
+                        id={`${forceA.nationName}-${unit.name}-${NationTypeLookup[
                           forceA.nationName
                         ].maxPips(unit.name)}`}
                         key={`index${unit.name}`}
-                        nationLookup={NationLookup}
+                        nationLookup={NationTypeLookup}
                         block={{
                           name: unit.name,
                           nationName: forceA.nationName,
                           strength: unit.special
                             ? 10
-                            : NationLookup[forceA.nationName].maxPips(
+                            : NationTypeLookup[forceA.nationName].maxPips(
                               unit.name
                             ),
                         }}
@@ -454,7 +460,7 @@ const ForcePanel = ({ attacker, onUpdate }) => {
       </ListItem>
       <ListItem key="techList">
         <ListItemText>
-          {NationLookup[forceA.nationName].specialTechnologies?.map(
+          {NationTypeLookup[forceA.nationName].specialTechnologies?.map(
             (val, index) => {
               return <Chip disabled={true} label={val} />;
             }
@@ -488,7 +494,7 @@ function Simulator() {
   const AForceString = validString ? validString[2] : "!wt3|wt3!012345";
   const BForceString = validString ? validString[3] : "!ai4|ai2!012345";
 
-  const initializeFromString = (string, force) => {
+  const initializeFromString = (string: string, force: Force) => {
     try {
       const split = string.split("!");
       if (split.length < 2 || split.length > 3) {
@@ -507,7 +513,7 @@ function Simulator() {
         .filter(function (item, pos) {
           return newOrderIdx.indexOf(item) === pos;
         })
-        .map((idx) => STANDARD_ATTACK_ORDER[idx]);
+        .map((idx) => STANDARD_ATTACK_ORDER[Number(idx)]);
     } catch (e) {
       console.log(e);
     }
@@ -530,15 +536,15 @@ function Simulator() {
 
   const initialCombatRounds: CombatRound[] = [];
 
-  const formatCombatRoundsString = (combatRounds) => {
+  const formatCombatRoundsString = (combatRounds: CombatRound[]) => {
     return combatRounds.map((round) => {
       return round.attacker + (round.hasDoWFirstFire ? "d" : "x") + (round.seaInvasion ? "s" : "n");
     }).join("");
   };
 
   const initializeCombatRoundsFromString = (
-    combatRoundsString,
-    initialCombatRounds
+    combatRoundsString: string,
+    initialCombatRounds: CombatRound[]
   ) => {
     const matches = combatRoundsString.match(/([AB][dx][sn]){1}/g);
     if (!matches) return;
@@ -546,7 +552,7 @@ function Simulator() {
     initialCombatRounds.push(
       ...matches.map((round) => {
         const item = {
-          attacker: round.charAt(0),
+          attacker: round.charAt(0) as "A" | "B",
           hasDoWFirstFire: round.charAt(1) === "d",
           seaInvasion: round.charAt(2) === "s",
         };
@@ -627,11 +633,8 @@ function Simulator() {
   }
   const likelyResultsForA = findExample(aResults, 5);
   const likelyResultsForB = findExample(oResults, 5);
-  //  console.log(likelyResultsForA);
-
 
   const updateURL = ({ updateAttacker = battleforceA, updateDefender = battleforceB, updateRounds = combatRounds }) => {
-    //    console.log("Updating URL ", updateAttacker, updateDefender);
     window.history.replaceState(
       { page: 2 },
       "Combat Simulator",
@@ -639,8 +642,8 @@ function Simulator() {
     );
   }
 
-  function setDoW(value) {
-    const copy = JSON.parse(JSON.stringify(combatRounds));
+  function setDoW(value: boolean) {
+    const copy: [CombatRound] = JSON.parse(JSON.stringify(combatRounds));
     if (copy?.length > 0) {
       //    console.log(copy, value);
       copy[0].hasDoWFirstFire = value;
@@ -649,14 +652,14 @@ function Simulator() {
     }
   }
 
-  function setSeaInvasion(index, value) {
+  function setSeaInvasion(index: number, value: boolean) {
     const copy = JSON.parse(JSON.stringify(combatRounds));
     copy[index].seaInvasion = value;
     setCombatRounds(copy);
     updateURL({ updateRounds: copy });
   }
 
-  function removeCombatRound(index) {
+  function removeCombatRound(index: number) {
     const copy = JSON.parse(JSON.stringify(combatRounds));
     copy.splice(index, 1);
     setCombatRounds(copy);
@@ -670,8 +673,8 @@ function Simulator() {
     updateURL({ updateRounds: copy });
   }
 
-  function setCombatRoundAttacker(index, attacker) {
-    const copy = JSON.parse(JSON.stringify(combatRounds));
+  function setCombatRoundAttacker(index: number, attacker: "A" | "B") {
+    const copy: CombatRound[] = JSON.parse(JSON.stringify(combatRounds));
     copy[index].attacker = attacker;
     setCombatRounds(copy);
     updateURL({ updateRounds: copy });
@@ -688,7 +691,7 @@ function Simulator() {
     }, 0)
   );
 
-  function updateAttacker(updateFunction) {
+  function updateAttacker(updateFunction: any) {
     setBattleforceA((old) => {
       const updated = updateFunction(old);
       updateURL({ updateAttacker: updated });
@@ -696,7 +699,7 @@ function Simulator() {
     });
   }
 
-  function updateDefender(updateFunction) {
+  function updateDefender(updateFunction: any) {
     setBattleforceB((old) => {
       const updated = updateFunction(old);
       updateURL({ updateDefender: updated });
@@ -741,7 +744,7 @@ function Simulator() {
                 </span>
               </ListItemText>
             </ListItem>
-            {combatRounds.map((round, index) => {
+            {combatRounds.map((round: CombatRound, index) => {
               return (
                 <ListItem key={index} disablePadding>
                   <ListItemButton
@@ -858,7 +861,7 @@ function Simulator() {
                   name: battleforceA.name,
                   opacity: 0.8,
                   marker: {
-                    color: NationLookup[battleforceA.nationName].color,
+                    color: NationTypeLookup[battleforceA.nationName].color,
                   },
                 },
                 {
@@ -867,7 +870,7 @@ function Simulator() {
                   name: battleforceB.name,
                   opacity: 0.8,
                   marker: {
-                    color: NationLookup[battleforceB.nationName].color,
+                    color: NationTypeLookup[battleforceB.nationName].color,
                   },
                 },
               ]}

@@ -1,12 +1,18 @@
 import React from "react";
-import { Block, unitLookup, UnitName } from "../model/battle.ts";
+import { Block, unitLookup, UnitName } from "../model/battle";
+//@ts-ignore
 import BattleshipIcon from "./noun-battleship-44759.svg";
+//@ts-ignore
 import AirForceIcon from "./spitfire.svg";
+//@ts-ignore
 import SubIcon from "./noun-submarine-1189639.svg";
+//@ts-ignore
 import CarrierIcon from "./noun-carrier-1201287.svg";
+//@ts-ignore
 import FactoryIcon from "./noun-factory-997898.svg";
+//@ts-ignore
 import AnchorIcon from "./noun-anchor-1089371.svg";
-import Icon from "./Icon.tsx";
+import Icon from "./Icon";
 
 // Define interfaces for Nation and Block (adjust as needed)
 interface Nation {

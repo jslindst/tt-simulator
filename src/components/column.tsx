@@ -2,9 +2,9 @@ import React from "react";
 
 import { Droppable } from "@hello-pangea/dnd";
 import styled from "styled-components";
-import { Resource, Population } from "./TrackerIcons.tsx";
-import { Faction, Territory } from "../model/HistoryTracker.js";
-import { TerritoryItem } from "./item.tsx";
+import { Faction, Territory } from "../model/HistoryTracker";
+import { TerritoryItem } from "./item";
+import { FactionDiv } from "./FactionDiv";
 
 const Container = styled.div`
   margin: 4px;
@@ -28,9 +28,12 @@ interface FactionColumnProps {
   faction: Faction;
   isDropDisabled: boolean;
   highlightedTerritories: string[];
-  addTerritoryField: React.ReactNode; // Correct type for React components/elements
+  addTerritoryField: React.ReactNode;
   blockadeUpdateFunction: (territory: Territory, blockadeLevel: number) => void;
 }
+
+
+
 
 export default class FactionColumn extends React.Component<FactionColumnProps> { // Use the interface here
   render() {
@@ -56,13 +59,7 @@ export default class FactionColumn extends React.Component<FactionColumnProps> {
               isDraggingOver={snapshot.isDraggingOver}
               faction={faction}
             >
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <div style={{ width: "125px", padding: "3px", fontSize: "20px", fontWeight: "bold", marginRight: "auto" }}>{faction.name}</div>
-                <div style={{ width: "25px" }}><Population amount={faction.POP()} /></div>
-                <div style={{ width: "25px" }}><Resource amount={faction.RES()} /></div>
-                <div style={{ width: "25px" }}><Resource color="red" amount={faction.RESTransAfrica()} /></div>
-                <div style={{ width: "65px" }} />
-              </div>
+              <FactionDiv faction={faction} />
               {this.props.addTerritoryField}
 
               {territoriesToShow.map((territory, index) => (
