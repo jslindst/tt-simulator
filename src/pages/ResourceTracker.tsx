@@ -1,17 +1,12 @@
 import React from "react";
-import { useState, useRef } from "react";
+import { useState } from "react";
 
-import AppBar from "@mui/material/AppBar";
-import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import AddIcon from "@mui/icons-material/Add";
 
 //@ts-ignore
-import { territoriesByName as TERRITORIES_BY_NAME, factions as FACTIONS_BY_NAME, territoryList, Territory, Faction } from "../model/HistoryTracker.ts";
+import { territoriesByName as TERRITORIES_BY_NAME, factions as FACTIONS_BY_NAME, Territory } from "../model/HistoryTracker.ts";
 import FactionColumn from "../components/column.tsx";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext } from "@hello-pangea/dnd";
 import styled from "styled-components";
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';

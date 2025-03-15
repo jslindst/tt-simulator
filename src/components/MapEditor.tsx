@@ -1,7 +1,33 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MapVisualization, { Point, Region, MapData, RegionStyle, VertexStyle } from './MapVisualization.tsx';
 
-type Mode = 'none' | 'add' | 'move' | 'delete' | 'create-region' | 'select-region';
+type Mode = 'none' | 'add' | 'move' | 'delete' | 'create-region' | 'select-region' | 'split-edge'; // Added split-edge mode
+
+
+// --- Region Selection and Editing ---
+const findRegionAtPoint = (data: MapData, x: number, y: number): string | null => {
+  for (let i = data.regions.length - 1; i >= 0; i--) {
+    const region = data.regions[i];
+    let points: Point[] = region.vertices.map(vertexId => data.vertices.find(v => v.id === vertexId)).filter((vertex): vertex is Point => vertex !== undefined);
+    if (isPointInPolygon(x, y, points)) {
+      return region.id;
+    }
+  }
+  return null;
+};
+
+const isPointInPolygon = (x: number, y: number, vertices: Point[]): boolean => {
+  let isInside = false;
+  for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+    const xi = vertices[i].x, yi = vertices[i].y;
+    const xj = vertices[j].x, yj = vertices[j].y;
+
+    const intersect = ((yi > y) != (yj > y))
+      && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) isInside = !isInside;
+  }
+  return isInside;
+};
 
 const MapEditor: React.FC = () => {
   const [imageSrc] = useState<string>('TTmap2ndEd.jpg'); // YOUR IMAGE URL
@@ -14,7 +40,7 @@ const MapEditor: React.FC = () => {
   const [currentRegionVertices, setCurrentRegionVertices] = useState<string[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [editedRegionName, setEditedRegionName] = useState<string>('');
-  const [isDrawingRegion, setIsDrawingRegion] = useState(false); // Track drawing state
+  const [isDrawingRegion, setIsDrawingRegion] = useState<boolean>(false); // Track drawing state
 
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -61,9 +87,8 @@ const MapEditor: React.FC = () => {
   }, [currentRegionVertices, vertices]);
 
   // --- Event Handlers ---
-
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
+    const canvas = event.target as HTMLCanvasElement;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -82,7 +107,8 @@ const MapEditor: React.FC = () => {
           vertex.id === selectedVertexId ? { ...vertex, x, y } : vertex
         );
         setVertices(updatedVertices);
-        //Update regions, using Ids
+
+        // Update regions, using IDs
         const newRegions = [...regions];
         newRegions.forEach(region => {
           region.vertices = region.vertices.map(vertexId => {
@@ -92,6 +118,7 @@ const MapEditor: React.FC = () => {
           }).filter(item => item !== null && item !== undefined && item !== "") as string[];
         });
         setRegions(newRegions.filter(r => r.vertices.length >= 3));
+
         setSelectedVertexId(null);
         setHighlightedVertexId(null);
       }
@@ -121,20 +148,20 @@ const MapEditor: React.FC = () => {
         }
       }
     } else if (mode === 'select-region') {
-      const clickedRegionId = findRegionAtPoint(x, y);
-      console.log("clicked", clickedRegionId)
-      setSelectedRegionId(clickedRegionId); // Select or deselect
-      if (!clickedRegionId) console.log("no region found")
+      const clickedRegionId = findRegionAtPoint({ vertices, regions }, x, y);
+      setSelectedRegionId(clickedRegionId);
       if (clickedRegionId) {
         let region = regions.find(r => r.id == clickedRegionId);
         if (region) {
           setEditedRegionName(region.name);
         }
       }
+    } else if (mode === 'split-edge') {
+      splitEdgeAtPoint(x, y);
     }
   };
 
-  const handleCanvasMouseUp = () => {
+  const handleCanvasMouseUp = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (mode === 'create-region') {
       // Finish drawing (but don't close unless clicked on the first vertex or Esc is pressed)
 
@@ -146,13 +173,14 @@ const MapEditor: React.FC = () => {
   };
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
+    const canvas = event.target as HTMLCanvasElement;
+
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    if (mode !== 'select-region') {
+    if (mode !== 'select-region' && mode !== 'split-edge') {
       const closestVertexId = findClosestVertexId(x, y);
       setHighlightedVertexId(closestVertexId);
     } else {
@@ -170,6 +198,7 @@ const MapEditor: React.FC = () => {
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && mode === 'create-region') {
       setIsDrawingRegion(false);
+      setCurrentRegionVertices([]);
     }
   };
   //Helper to finish region
@@ -190,6 +219,7 @@ const MapEditor: React.FC = () => {
     setCurrentRegionVertices([]);
     setNextRegionName(`Region ${regions.length + 2}`);
   }
+
   // Helper function to find the closest vertex ID
   const findClosestVertexId = (x: number, y: number): string | null => {
     let closestId: string | null = null;
@@ -206,37 +236,11 @@ const MapEditor: React.FC = () => {
   };
 
   const generateVertexId = (): string => {
-    return `v${Date.now()}-</span>${Math.random().toString(36).substring(2, 8)}`;
+    return `v${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
   };
 
   const generateRegionId = (): string => {
-    return `r${Date.now()}\-</span>${Math.random().toString(36).substring(2, 8)}`;
-  };
-
-  // --- Region Selection and Editing ---
-
-  const findRegionAtPoint = (x: number, y: number): string | null => {
-    //Iterate regions in reverse order, for the top most to be selected first.
-    for (let i = regions.length - 1; i >= 0; i--) {
-      const region = regions[i];
-      let points: Point[] = region.vertices.map(vertexId => vertices.find(v => v.id === vertexId)).filter((vertex): vertex is Point => vertex !== undefined);
-      if (isPointInPolygon(x, y, points)) {
-        return region.id;
-      }
-    }
-    return null;
-  };
-  const isPointInPolygon = (x: number, y: number, vertices: Point[]): boolean => {
-    let isInside = false;
-    for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-      const xi = vertices[i].x, yi = vertices[i].y;
-      const xj = vertices[j].x, yj = vertices[j].y;
-
-      const intersect = ((yi > y) != (yj > y))
-        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-      if (intersect) isInside = !isInside;
-    }
-    return isInside;
+    return `r${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
   };
 
   const handleRegionNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,8 +299,140 @@ const MapEditor: React.FC = () => {
     };
     reader.readAsText(file);
   };
+
+  // --- Split Edge Logic ---
+
+  const splitEdgeAtPoint = (x: number, y: number) => {
+    let closestEdges: { regionId: string; vertexIndex1: number; vertexIndex2: number }[] = [];
+    let minDistance = Infinity;
+
+    // Iterate through all regions and their edges
+    for (const region of regions) {
+      for (let i = 0; i < region.vertices.length; i++) {
+        const vertexId1 = region.vertices[i];
+        const vertexId2 = region.vertices[(i + 1) % region.vertices.length]; // Wrap around
+        const vertex1 = vertices.find(v => v.id === vertexId1);
+        const vertex2 = vertices.find(v => v.id === vertexId2);
+
+        if (!vertex1 || !vertex2) continue; // Skip if vertices not found
+
+        const distance = pointToLineDistance(x, y, vertex1.x, vertex1.y, vertex2.x, vertex2.y);
+
+        if (distance < 10) { // 10 pixel tolerance - collect *all* close edges
+          if (distance < minDistance) minDistance = distance; //Keep track of minimum.
+
+          closestEdges.push({
+            regionId: region.id,
+            vertexIndex1: i,
+            vertexIndex2: (i + 1) % region.vertices.length,
+          });
+        }
+      }
+    }
+    //Filter edges by minimum distance
+    closestEdges = closestEdges.filter(edge => {
+      const vertex1 = vertices.find(v => v.id === regions.find(r => r.id === edge.regionId)?.vertices[edge.vertexIndex1]);
+      const vertex2 = vertices.find(v => v.id === regions.find(r => r.id === edge.regionId)?.vertices[edge.vertexIndex2]);
+
+      if (!vertex1 || !vertex2) return false;
+
+      const distance = pointToLineDistance(x, y, vertex1.x, vertex1.y, vertex2.x, vertex2.y);
+      return Math.abs(distance - minDistance) < 0.001; //Floating point comparison.
+
+    });
+
+    if (closestEdges.length > 0) {
+      // 1. Create the new vertex
+      const newVertex: Point = { x, y, id: generateVertexId() };
+      setVertices([...vertices, newVertex]);
+
+      // 2. Update *all* affected regions
+      const updatedRegions = regions.map(region => {
+        // Find if this region has a matching edge
+        const matchingEdge = closestEdges.find(edge => edge.regionId === region.id);
+
+        if (matchingEdge) {
+          // Insert the new vertex ID into the vertices array
+          const newVertices = [...region.vertices];
+          newVertices.splice(matchingEdge.vertexIndex2, 0, newVertex.id); // Insert *before* vertex2
+          return { ...region, vertices: newVertices };
+        }
+        return region;
+      });
+      setRegions(updatedRegions);
+    }
+  };
+
+  // Helper function: Calculate distance from point to line segment
+  const pointToLineDistance = (x: number, y: number, x1: number, y1: number, x2: number, y2: number): number => {
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    let param = -1;
+    if (len_sq != 0) //in case of 0 length line
+      param = dot / len_sq;
+
+    let xx, yy;
+
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    }
+    else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    }
+    else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+
+    const dx = x - xx;
+    const dy = y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
   useEffect(() => {
     // Add event listener for keydown events
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && mode === 'create-region') {
+        setIsDrawingRegion(false);
+        setCurrentRegionVertices([]);
+      }
+
+      // Check if the active element is an input field
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA');
+
+      // Only process shortcuts if an input isn't focused
+      if (!isInputFocused) {
+        switch (event.key.toLowerCase()) {
+          case 'a':
+            setMode('add');
+            break;
+          case 'm':
+            setMode('move');
+            break;
+          case 'd':
+            setMode('delete');
+            break;
+          case 'c':
+            setMode('create-region');
+            setIsDrawingRegion(false);
+            break;
+          case 's':
+            setMode('select-region');
+            break;
+          case 'e':
+            setMode('split-edge');
+            break;
+        }
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
 
     // Cleanup the event listener when the component unmounts
@@ -324,6 +460,7 @@ const MapEditor: React.FC = () => {
           Create Region {isDrawingRegion ? '(Drawing)' : ''} {/* Show drawing status */}
         </button>
         <button onClick={() => setMode('select-region')} disabled={mode === 'select-region'}>Select Region</button>
+        <button onClick={() => setMode('split-edge')} disabled={mode === 'split-edge'}>Split Edge</button> {/* New button */}
         <button onClick={handleDownload}>Download JSON</button>
         <input type="file" accept=".json" onChange={handleLoad} />
         <div>Current Mode: {mode}</div>
@@ -361,7 +498,7 @@ const MapEditor: React.FC = () => {
           onClick={handleCanvasClick}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
-          cursor={mode === 'add' ? 'crosshair' : 'default'}
+          cursor={mode === 'add' ? 'crosshair' : mode === 'split-edge' ? 'crosshair' : 'default'}
         />
       </div>
     </div>

@@ -41,6 +41,8 @@ interface MapVisualizationProps {
   onMouseMove?: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   onMouseUp?: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   cursor?: string;
+  width?: number | string;  // Add width prop
+  height?: number | string; // Add height prop
 }
 
 const MapVisualization: React.FC<MapVisualizationProps> = ({
@@ -54,10 +56,55 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   onClick,
   onMouseMove,
   onMouseUp,
-  cursor = 'default'
+  cursor = 'default',
+  width = '2000',   // Default width
+  height = 'auto',  // Default height
 }) => {
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [scale, setScale] = useState(1); // Add a scale state
+  const containerRef = useRef<HTMLDivElement>(null); // Ref for the container
+
+
+  // Calculate scale based on container and image size
+  const calculateScale = useCallback(() => {
+    const container = containerRef.current;
+    const image = imageRef.current;
+
+    if (container && image) {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      //To make it fit, the image should be inside the container, not take more space.
+      //That is why we use Math.min
+      const newScale = Math.min(
+        containerWidth / image.naturalWidth,
+        containerHeight / image.naturalHeight
+      );
+
+      setScale(newScale);
+
+    }
+  }, []);
+
+  useEffect(() => {
+    calculateScale(); // Initial calculation
+
+    const handleResize = () => {
+      calculateScale();
+    };
+    // Add event listener for window resize
+    window.addEventListener('resize', handleResize);
+
+    // Call draw after scale calculation (and image load)
+    //draw(); // Removed: draw is called on scale change
+
+    // Clean up the event listener
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [calculateScale]); //, draw]); Removed draw dependency, it will be called on scale change anyway.
+
+
   // Drawing function
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -67,16 +114,19 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = image.width;
-    canvas.height = image.height;
+    // Apply scaling to the canvas
+    canvas.width = image.naturalWidth * scale;
+    canvas.height = image.naturalHeight * scale;
+    ctx.scale(scale, scale);
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(image, 0, 0);
+
 
     // Draw regions (filled and with name)
     regions.forEach(region => {
       if (region.vertices.length < 3) return;
       const regionStyle = getRegionStyle(region);
-
 
       //Get points:
       let points: Point[] = region.vertices
@@ -131,7 +181,10 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.strokeStyle = style.drawColor;
       ctx.stroke();
     });
-  }, [regions, vertices, getRegionStyle, getVertexStyle, showLabels, customRenderFunctions]);
+    // Reset scale for event handling (VERY IMPORTANT)
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  }, [regions, vertices, getRegionStyle, getVertexStyle, showLabels, customRenderFunctions, scale]);
 
   useEffect(() => {
     draw();
@@ -166,21 +219,46 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     return null;
   };
 
+  // Transform mouse events to account for scaling
+  const transformMouseEvent = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return event;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX / scale;
+    const y = (event.clientY - rect.top) * scaleY / scale;
+
+    // Create a new object with the adjusted coordinates, *spreading* the original event's properties.
+    const adjustedEvent = {
+      ...event, // Copy *all* properties from the original React event
+      clientX: x,
+      clientY: y,
+      // No need to manually copy other properties.  The spread operator (...) handles it.
+    };
+
+    return adjustedEvent;
+  };
+
   return (
-    <div style={{ position: 'relative' }}>
+    <div ref={containerRef} style={{ width, height, position: 'relative' }}>
       <img
         ref={imageRef}
         src={imageSrc}
         alt="Map"
         style={{ display: 'none' }}
-        onLoad={draw}
+        onLoad={() => {
+          calculateScale();
+          draw(); // Call draw when the image loads
+        }}
       />
       <canvas
         ref={canvasRef}
-        style={{ cursor }}
-        onClick={onClick}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
+        style={{ cursor, width: '100%', height: '100%' }}  // Make canvas fill container
+        onClick={(e) => onClick && onClick(transformMouseEvent(e))}
+        onMouseMove={(e) => onMouseMove && onMouseMove(transformMouseEvent(e))}
+        onMouseUp={(e) => onMouseUp && onMouseUp(transformMouseEvent(e))}
       />
     </div>
   );

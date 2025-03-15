@@ -12,7 +12,7 @@ type VisualIdentity = {
   color: string
 }
 
-const countryNameToAcronym: { [key: string]: VisualIdentity } = {
+export const countryVisualIdentity: { [key: string]: VisualIdentity } = {
   "Canada": { name: "CA", color: 'rgb(29,176,223)' },
   "USA": { name: "US", color: 'rgb(136,190,128)' },
   "Latin America": { name: "LA", color: 'rgb(191,169,125)' },
@@ -147,7 +147,7 @@ const LandAreaData = [
   ["West", "French North Africa", "Sfax", "-", false, "Colony", 0, 0, 0, 0, "", 0],
   ["Neutral", "Norway", "Oslo", "Town", true, "MinorNation", 1, 0, 0, 1, "Norway", 3],
   ["Neutral", "Norway", "Narvik", "-", false, "MinorNation", 0, 0, 0, 0, "", 0],
-  ["Neutral", "Sweden", "Gallilvare", "-", false, "MinorNation", 1, 0, 0, 0, "", 0],
+  ["Neutral", "Sweden", "Gallivare", "-", false, "MinorNation", 1, 0, 0, 0, "", 0],
   ["Neutral", "Sweden", "Stockholm", "City", true, "MinorNation", 1, 0, 1, 2, "Sweden", 3],
   ["Neutral", "Finland", "Petsamo", "-", false, "MinorNation", 1, 0, 0, 0, "", 0],
   ["Neutral", "Finland", "Helsinki", "Town", true, "MinorNation", 0, 0, 0, 1, "Finland", 4],
@@ -230,7 +230,7 @@ const LandAreaData = [
 // @ts-ignore
 const header: string[] = LandAreaData.shift();
 export const landAreaTable: LandArea[] = []
-export const landAreaLookup = {};
+export const landAreaLookup: { [key: string]: LandArea } = {};
 
 LandAreaData.forEach((data) => {
   //@ts-ignore
@@ -327,8 +327,8 @@ export class Nation {
 
   constructor(name: string, territories: LandArea[]) {
     this.name = name;
-    this.shortName = countryNameToAcronym[name].name;
-    this.color = countryNameToAcronym[name].color;
+    this.shortName = countryVisualIdentity[name].name;
+    this.color = countryVisualIdentity[name].color;
     if (this.shortName === null || this.shortName === undefined) throw new Error(`No acronym found for ${this.name}`);
     this.territories = territories.map(area => new Territory(area, this));
     //@ts-ignore
