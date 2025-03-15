@@ -430,15 +430,14 @@ function fire(firingBlock: Block, targetBlocks: Block[], attackOrder: AttackOrde
   order = order.filter(item => toHitTable[item] > 0);
 
 
-  //@ts-ignore
-  const targetUnitType: UnitClass = order.find(
+  const targetUnitType: UnitClass | undefined = order.find(
     (type) =>
       targetBlocks.findIndex(
         (block) => unitLookup[block.name]?.class === type
       ) !== -1
   );
 
-  if (targetUnitType === null || targetUnitType === undefined) {
+  if (!targetUnitType) {
     if (LOG) console.log(`No targets available for firing.`);
     return;
   }
