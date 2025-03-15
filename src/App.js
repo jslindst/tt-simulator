@@ -4,7 +4,8 @@ import Layout from "./pages/Layout";
 import Simulator from "./pages/Simulator.tsx";
 import ResourceTracker from "./pages/ResourceTracker.tsx";
 import NoPage from "./pages/NoPage";
-import MapEditor from "./components/Map.tsx";
+import MapEditor from "./components/MapEditor.tsx";
+import MapView from "./components/MapView.tsx";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route index element={<Simulator />} />
           <Route path="/resourceTracker" element={<ResourceTracker />} />
           <Route path="/mapEditor" element={<MapEditor />} />
+          <Route path="/mapView" element={<MapView />} />
           <Route path="*" element={<NoPage />} />
         </Route>
       </Routes>

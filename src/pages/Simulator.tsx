@@ -29,6 +29,8 @@ import { HelpDialogSlide } from "../components/HelpDialogSlide.tsx";
 import { BlockSvg } from "../components/BlockSvg.tsx";
 
 import { AttackOrderList } from "../components/AttackOrderList.tsx";
+import MapVisualization from "../components/MapVisualization";
+import { mapData } from "../mapData";
 
 import "../App.css";
 import {

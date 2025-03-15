@@ -1,21 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-
-export interface Point {
-  x: number;
-  y: number;
-  id: string;
-}
-
-export interface Region {
-  name: string;
-  vertices: string[];
-  id: string;
-}
-
-export interface MapData {
-  regions: Region[];
-  vertices: Point[];
-}
+import MapVisualization, { Point, Region, MapData, RegionStyle, VertexStyle } from './MapVisualization.tsx';
 
 type Mode = 'none' | 'add' | 'move' | 'delete' | 'create-region' | 'select-region';
 
@@ -36,65 +20,35 @@ const MapEditor: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // --- Drawing Functions ---
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    const image = imageRef.current;
-    if (!canvas || !image) return;
+  // Custom render functions for MapEditor
+  function getRegionFillStyle(region: Region): RegionStyle {
+    return {
+      fillColor: region.id === selectedRegionId
+        ? 'rgba(255, 255, 0, 0.3)'
+        : region.name.startsWith('Region')
+          ? 'rgba(255, 0, 0, 0.2)'
+          : 'rgba(0, 128, 255, 0.2)',
+      drawColor: 'green',
+      drawWidth: 2
+    }
+  }
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  function getVertexFillStyle(vertex: Point): VertexStyle {
+    return {
+      fillColor: vertex.id === selectedVertexId ? 'yellow' : vertex.id === highlightedVertexId ? (mode === 'delete' ? 'red' : 'cyan') : 'blue',
+      drawColor: 'black'
+    }
+  };
 
-    canvas.width = image.width;
-    canvas.height = image.height;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(image, 0, 0);
-
-    // Draw regions (filled and with name)
-    regions.forEach(region => {
-      if (region.vertices.length < 3) return;
-      //Get points:
-      let points: Point[] = region.vertices.map(vertexId => vertices.find(v => v.id === vertexId)).filter((vertex): vertex is Point => vertex !== undefined);
-
-      if (points.length < 3) return; //Sanity check.
-      ctx.beginPath();
-      ctx.moveTo(points[0].x, points[0].y);
-      for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x, points[i].y);
-      }
-      ctx.closePath();
-
-      // Fill color
-      ctx.fillStyle = region.id === selectedRegionId ? 'rgba(255, 255, 0, 0.3)' : region.name.startsWith('Region') ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 128, 255, 0.2)';
-      ctx.fill();
-
-      ctx.strokeStyle = 'green';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Calculate centroid and draw name
-      let sumX = 0;
-      let sumY = 0;
-      for (const point of points) {
-        sumX += point.x;
-        sumY += point.y;
-      }
-      const centerX = sumX / points.length;
-      const centerY = sumY / points.length;
-
-      ctx.fillStyle = 'black';
-      ctx.font = '14px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(region.name, centerX, centerY);
-    });
-
-    // Draw current region (being created)
+  // Custom rendering for the current region being created
+  const renderCurrentRegion = useCallback((ctx: CanvasRenderingContext2D) => {
     if (currentRegionVertices.length > 0) {
       ctx.beginPath();
-      let points: Point[] = currentRegionVertices.map(vertexId => vertices.find(v => v.id === vertexId)).filter((vertex): vertex is Point => vertex !== undefined);
-      if (points.length > 0) {
+      let points: Point[] = currentRegionVertices
+        .map(vertexId => vertices.find(v => v.id === vertexId))
+        .filter((vertex): vertex is Point => vertex !== undefined);
 
+      if (points.length > 0) {
         ctx.moveTo(points[0].x, points[0].y);
         for (let i = 1; i < points.length; i++) {
           ctx.lineTo(points[i].x, points[i].y);
@@ -104,28 +58,7 @@ const MapEditor: React.FC = () => {
         ctx.stroke();
       }
     }
-
-    // Draw vertices
-    vertices.forEach(vertex => {
-      ctx.beginPath();
-      ctx.arc(vertex.x, vertex.y, 5, 0, 2 * Math.PI);
-      let fillColor = 'blue';
-      if (vertex.id === selectedVertexId) {
-        fillColor = 'yellow';
-      } else if (vertex.id === highlightedVertexId) {
-        fillColor = (mode === 'delete') ? 'red' : 'cyan';
-      }
-      ctx.fillStyle = fillColor;
-      ctx.fill();
-      ctx.strokeStyle = 'black';
-      ctx.stroke();
-    });
-
-  }, [vertices, regions, selectedVertexId, highlightedVertexId, currentRegionVertices, mode, selectedRegionId]);
-
-  useEffect(() => {
-    draw();
-  }, [draw]);
+  }, [currentRegionVertices, vertices]);
 
   // --- Event Handlers ---
 
@@ -418,22 +351,18 @@ const MapEditor: React.FC = () => {
 
       {/* Scrollable Container */}
       <div ref={containerRef} style={{ overflow: 'auto', marginTop: '100px' }}>
-        <div style={{ position: 'relative' }}>
-          <img
-            ref={imageRef}
-            src={imageSrc}
-            alt="Map"
-            style={{ display: 'none' }}
-            onLoad={draw}
-          />
-          <canvas
-            ref={canvasRef}
-            style={{ cursor: mode === 'add' ? 'crosshair' : 'default' }}
-            onClick={handleCanvasClick}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-          />
-        </div>
+        <MapVisualization
+          imageSrc={imageSrc}
+          regions={regions}
+          vertices={vertices}
+          getRegionStyle={getRegionFillStyle}
+          getVertexStyle={getVertexFillStyle}
+          customRenderFunctions={[renderCurrentRegion]}
+          onClick={handleCanvasClick}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={handleCanvasMouseUp}
+          cursor={mode === 'add' ? 'crosshair' : 'default'}
+        />
       </div>
     </div>
   );

@@ -52,6 +52,8 @@ export const SiteAppBar = (props) => {
           >
             <MenuItem onClick={() => goTo('/')}>Combat Simulator</MenuItem>
             <MenuItem onClick={() => goTo('/resourceTracker')}>Resource Tracker</MenuItem>
+            <MenuItem onClick={() => goTo('/mapView')}>Map View</MenuItem>
+            <MenuItem onClick={() => goTo('/mapEditor')}>Map Editor</MenuItem>
           </Menu>
           <Typography style={{ fontSize: "15px" }} variant="h6" component="div" sx={{ flexGrow: 1 }}>
             {props.title}

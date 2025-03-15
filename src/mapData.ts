@@ -1,4 +1,4 @@
-import { MapData } from "./components/Map";
+import { MapData } from "./components/MapVisualization";
 
 export const mapData: MapData = {
   "regions": [
