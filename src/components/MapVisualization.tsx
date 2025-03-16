@@ -26,6 +26,12 @@ export type RegionStyle = {
   fillColor: string;
   drawColor: string;
   drawWidth: number;
+  pattern?: {
+    color1: string,
+    color2: string,
+  }
+  font?: string,
+  text?: string,
 }
 
 // --- NEW: Custom Event Interfaces ---
@@ -54,8 +60,8 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   imageSrc,
   regions,
   vertices,
-  getRegionStyle = (region: Region) => { return { fillColor: 'rgba(0, 128, 255, 0.5)', drawColor: 'green', drawWidth: 2 } },
-  getVertexStyle = (vertex: Point) => { return { fillColor: 'blue', drawColor: 'black' } },
+  getRegionStyle = (region: Region): RegionStyle => { return { fillColor: 'rgba(0, 128, 255, 0.5)', drawColor: 'green', drawWidth: 2 } },
+  getVertexStyle,
   showLabels = true,
   customRenderFunctions = [],
   onClick,
@@ -108,14 +114,15 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(image, 0, 0);
 
+    // draw the fill first
     regions.forEach(region => {
       if (region.vertices.length < 3) return;
       const regionStyle = getRegionStyle(region);
-      //Get points:
+
       let points: Point[] = region.vertices
         .map(vertexId => vertices.find(v => v.id === vertexId))
         .filter((vertex): vertex is Point => vertex !== undefined);
-      if (points.length < 3) return; //Sanity check.
+      if (points.length < 3) return;
 
       ctx.beginPath();
       ctx.moveTo(points[0].x, points[0].y);
@@ -124,8 +131,44 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       }
       ctx.closePath();
 
-      ctx.fillStyle = regionStyle.fillColor;
+      if (regionStyle.pattern) {
+        const patternWidth = 34;
+        let pattern: CanvasPattern | null = null;
+        const patternCanvas = document.createElement('canvas');
+        patternCanvas.width = patternWidth * 2;
+        patternCanvas.height = patternWidth * 2;
+        const patternCtx = patternCanvas.getContext('2d');
+        if (!patternCtx) return
+
+
+        patternCtx.fillStyle = regionStyle.pattern.color1
+        patternCtx.fillRect(0, 0, patternWidth, patternWidth * 2);
+
+        patternCtx.fillStyle = regionStyle.pattern.color2
+        patternCtx.fillRect(patternWidth, 0, patternWidth, patternWidth * 2);
+        pattern = ctx.createPattern(patternCanvas, 'repeat');
+        ctx.fillStyle = pattern!;
+      } else {
+        ctx.fillStyle = regionStyle.fillColor;
+      }
       ctx.fill();
+    });
+
+    regions.forEach(region => {
+      if (region.vertices.length < 3) return;
+      const regionStyle = getRegionStyle(region);
+
+      let points: Point[] = region.vertices
+        .map(vertexId => vertices.find(v => v.id === vertexId))
+        .filter((vertex): vertex is Point => vertex !== undefined);
+      if (points.length < 3) return;
+
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      ctx.closePath();
 
       ctx.strokeStyle = regionStyle.drawColor;
       ctx.lineWidth = regionStyle.drawWidth;
@@ -142,16 +185,16 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
         const centerY = sumY / points.length;
 
         ctx.fillStyle = 'black';
-        ctx.font = '14px Arial';
+        ctx.font = regionStyle.font || '18px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(region.name, centerX, centerY);
+        ctx.fillText(regionStyle.text || region.name, centerX, centerY);
       }
     });
 
     customRenderFunctions.forEach(renderFn => renderFn(ctx));
 
-    vertices.forEach(vertex => {
+    if (getVertexStyle) vertices.forEach(vertex => {
       const style = getVertexStyle(vertex);
       ctx.beginPath();
       ctx.arc(vertex.x, vertex.y, 5, 0, 2 * Math.PI);

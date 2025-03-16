@@ -156,6 +156,8 @@ export const UnitClassType = {
 
 export type NationType = {
   name: string,
+  mainCapitalName: string,
+  subCapitalNames: string[],
   shortName: string,
   color: string,
   pipColor: string,
@@ -171,6 +173,8 @@ export const Nations: NationType[] = [
   {
     name: "Axis",
     shortName: "a",
+    mainCapitalName: "Berlin",
+    subCapitalNames: ["Ruhr", "Rome"],
     color: "rgb(162,163,162)",
     pipColor: "black",
     darkTone: "rgb(111,113,112)",
@@ -181,6 +185,8 @@ export const Nations: NationType[] = [
   {
     name: "Neutral",
     shortName: "n",
+    mainCapitalName: "",
+    subCapitalNames: [],
     pipColor: "black",
     color: "rgb(225, 137, 46)",
     darkTone: "rgb(204, 92, 45)",
@@ -190,6 +196,8 @@ export const Nations: NationType[] = [
   },
   {
     name: "USSR",
+    mainCapitalName: "Moscow",
+    subCapitalNames: ["Baku", "Leningrad"],
     shortName: "u",
     pipColor: "white",
     color: "rgb(221,72,56)",
@@ -200,6 +208,8 @@ export const Nations: NationType[] = [
   },
   {
     name: "West",
+    mainCapitalName: "London",
+    subCapitalNames: ["Washington", "Paris", "Delhi"],
     shortName: "w",
     pipColor: "white",
     color: "rgb(30,120,171)",
@@ -210,6 +220,8 @@ export const Nations: NationType[] = [
   },
   {
     name: "Japanese (CnC)",
+    mainCapitalName: "",
+    subCapitalNames: [],
     shortName: "j",
     pipColor: "white",
     color: "rgb(171,146,36)",
@@ -229,6 +241,8 @@ export const Nations: NationType[] = [
   },
   {
     name: "Soviets (CnC)",
+    mainCapitalName: "",
+    subCapitalNames: [],
     shortName: "s",
     pipColor: "white",
     color: "rgb(222,74,54)",
@@ -239,6 +253,8 @@ export const Nations: NationType[] = [
   },
   {
     name: "US (CnC)",
+    mainCapitalName: "",
+    subCapitalNames: [],
     shortName: "U",
     pipColor: "white",
     color: "rgb(93,134,73)",

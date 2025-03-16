@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import Button from "@mui/material/Button";
 
-import { territoriesByName as TERRITORIES_BY_NAME, factions as FACTIONS_BY_NAME, Territory, Faction } from "../model/HistoryTracker";
+import { territoriesByName as TERRITORIES_BY_NAME, factionsByName as FACTIONS_BY_NAME, Territory, Faction } from "../model/HistoryTracker";
 import FactionColumn from "../components/column";
 import { DragDropContext, DragStart, DragUpdate } from "@hello-pangea/dnd";
 import styled from "styled-components";
@@ -16,22 +16,22 @@ import { SiteAppBar } from "./SiteAppBar";
 const CHAR_LOOKUP = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!#*';
 export const TERRITORIES_WITH_RESOURCES = Object.keys(TERRITORIES_BY_NAME).map(key => TERRITORIES_BY_NAME[key]).filter(terr => terr.hasResources());
 
+
 type ResourceTrackerState = {
   territoriesByName: { [key: string]: Territory },
   factionsByName: { [key: string]: Faction },
-  order: string[],
+  factionOrder: string[],
   highlightedTerritories: string[],
   originFaction: string | null
 };
 
-const stateStructure: ResourceTrackerState = {
+const initialStructure: ResourceTrackerState = {
   territoriesByName: TERRITORIES_BY_NAME,
   factionsByName: FACTIONS_BY_NAME,
-  order: Object.keys(FACTIONS_BY_NAME),
+  factionOrder: Object.keys(FACTIONS_BY_NAME),
   highlightedTerritories: [],
   originFaction: null
 };
-
 
 const AddTerritoryField: React.FC<{ territoryList: Territory[], onAddTerritory: (territory: Territory) => void }> = ({ territoryList, onAddTerritory }) => {
 
@@ -102,7 +102,7 @@ function charToTerritory(char: string) {
 class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
 
   createInitState() {
-    const initState = stateStructure;
+    const initState = initialStructure;
     return initState;
   }
 
@@ -239,7 +239,7 @@ class ResourceTracker extends React.Component<{}, ResourceTrackerState> {
           onDragStart={this.onDragStart}
           onDragEnd={this.onDragEnd}>
           <Container>
-            {this.state.order.map((id, index) => {
+            {this.state.factionOrder.map((id, index) => {
               const faction = this.state.factionsByName[id];
               if (faction === undefined) return <p>Not Found</p>
               return <FactionColumn

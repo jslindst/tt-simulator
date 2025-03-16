@@ -2,7 +2,7 @@ import { MapData } from "./components/MapVisualization";
 
 import * as loadedMapData from './mapData.json';
 
-export function findNeighboringRegions(mapData: MapData): Record<string, string[]> {
+function findNeighboringRegions(mapData: MapData): Record<string, string[]> {
   const { regions, vertices } = mapData;
   const neighbors: Record<string, string[]> = {};
 
@@ -45,3 +45,12 @@ export function findNeighboringRegions(mapData: MapData): Record<string, string[
 }
 
 export const mapData = loadedMapData
+
+export const neighborLookupNoAfrica = findNeighboringRegions(loadedMapData);
+export const neighborLookupWithAfricaRoute = findNeighboringRegions(loadedMapData);
+
+neighborLookupWithAfricaRoute["West Indian Ocean"].push("South Atlantic Ocean");
+neighborLookupWithAfricaRoute["South Atlantic Ocean"].push("West Indian Ocean");
+
+console.log("no", neighborLookupNoAfrica)
+console.log("with", neighborLookupWithAfricaRoute)

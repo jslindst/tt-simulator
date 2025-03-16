@@ -44,7 +44,7 @@ export default class FactionColumn extends React.Component<FactionColumnProps> {
         return A.name.localeCompare(B.name);
       return A.nation.name.localeCompare(B.nation.name);
     });
-
+    if (!faction.isPlayable) return <></>
 
     const highlights = this.props.highlightedTerritories
     return (
