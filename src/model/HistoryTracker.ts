@@ -13,6 +13,8 @@ type VisualIdentity = {
   color: string
 }
 
+const INFLUENCE_NEEDED = 2;
+
 export const countryVisualIdentity: { [key: string]: VisualIdentity } = {
   "Canada": { name: "CA", color: 'rgb(29,176,223)' },
   "USA": { name: "US", color: 'rgb(136,190,128)' },
@@ -518,7 +520,7 @@ export class Nation {
   color: string;
   territories: Territory[];
   capital?: Territory;
-  influence: Faction[] = [];
+  influence: string[] = [];
 
   constructor(name: string, territories: LandAreaData[]) {
     this.name = name;
@@ -536,32 +538,49 @@ export class Nation {
     return (this.capital?.isOccupied() === true);
   }
 
+  isInfluenced(): boolean {
+    if (this.isOccupied()) return false;
+    return this.influence.length > 0
+  }
+
+  influencor(): string | null {
+    if (this.influence.length === 0) return null
+    return this.influence[0];
+  }
+
   setInfluence(faction: Faction) {
     if (this.isOccupied()) throw new Error(`Cannot influence ${this.name} as it is occupied by ${this.resourcesForFaction().name}.`);
-    if (this.influence.length === 3) throw new Error(`Cannot influence ${this.name} as it is already a satellite for ${this.resourcesForFaction().name}.`);
-    this.influence = [faction];
+    if (this.influence.length === INFLUENCE_NEEDED) throw new Error(`Cannot influence ${this.name} as it is already a satellite for ${this.resourcesForFaction().name}.`);
+    this.influence = [faction.name];
   }
 
   addInfluence(faction: Faction) {
-    if (this.isOccupied()) throw new Error(`Cannot influence ${this.name} as it is occupied by ${this.resourcesForFaction().name}.`);
-    if (this.influence.length === 3) throw new Error(`Cannot influence ${this.name} as it is already a satellite for ${this.resourcesForFaction().name}.`);
-    if (this.influence.length > 0 && !this.influence.includes(faction)) {
+    if (!this.capital) return // is sea
+    if (this.isOccupied()) {
+      console.warn(`Cannot influence ${this.name} as it is occupied by ${this.resourcesForFaction().name}.`);
+      return;
+    }
+    if (this.influence.length === INFLUENCE_NEEDED) {
+      console.warn(`Cannot influence ${this.name} as it is already a satellite for ${this.resourcesForFaction().name}.`);
+      return;
+    }
+    if (this.influence.length > 0 && !this.influence.includes(faction.name)) {
       this.influence.shift();
       return;
     }
-    this.influence.push(faction);
-    if (this.influence.length === 3) this.occupy(faction);
+    this.influence.push(faction.name);
+    if (this.influence.length === INFLUENCE_NEEDED) this.occupy(faction);
   }
 
   canBeInfluenced() {
     if (!this.capital) return false;
-    return !this.capital.isOccupied() && this.influence.length < 3;
+    return !this.capital.isOccupied() && this.influence.length < INFLUENCE_NEEDED;
   }
 
   resourcesForFaction(): Faction {
     if (!this.capital) return factionsByName.Sea;
     if (this.capital.isOccupied()) return this.capital.occupier || factionsByName.Neutral;
-    if (this.influence.length > 0) return this.influence[0];
+    if (this.influence.length > 0) return factionsByName[this.influence[0]];
     return factionsByName.Neutral;
   }
 

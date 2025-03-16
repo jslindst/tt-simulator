@@ -10,7 +10,6 @@ interface FactionDivProps {
 
 export const FactionDiv: React.FC<FactionDivProps> = ({ faction, supplyStatus }) => {
   if (!faction.isPlayable) return <></>
-  console.log(faction.name, supplyStatus)
   return (
     <div style={{ display: "flex", justifyContent: "flex-end" }}>
       <div style={{ width: "125px", padding: "3px", fontSize: "20px", fontWeight: "bold", marginRight: "auto" }}>{faction.name}</div>

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'; // Import useCallback
 import MapVisualization, { MapMouseEvent, Region, RegionStyle } from './MapVisualization';
 import { SiteAppBar } from '../pages/SiteAppBar';
-import { Faction, factionsByName, findTerritoriesInSupply, territoriesByName, Territory } from '../model/HistoryTracker';
+import { Faction, factionsByName, territoriesByName, Territory } from '../model/HistoryTracker';
 import { findRegionAtPoint } from './MapEditor'; // Make sure you have this export
 import { mapData, neighborLookupNoAfrica, neighborLookupWithAfricaRoute } from 'mapData'; // Ensure this path is correct
 import { FactionDiv } from './FactionDiv';
@@ -28,14 +28,16 @@ export type SupplyStatus = {
 const MapView: React.FC = () => {
   const [myState, setMyState] = useState<TerritoryState>(initialState);
   const [currentFaction, setCurrentFaction] = useState<string>("Axis");
+  const [currentState, setCurrentMode] = useState<"Influence" | "Occupy">("Influence");
 
   const getRegionColor = useCallback((region: Region): RegionStyle => {
     const territory = myState.territoriesByName[region.name];
 
+    const controller = territory.controlledBy();
     const resourcesFor = (territory.resourcesForFaction() || myState.factionsByName.Neutral);
 
     const color = resourcesFor.color;
-    const inOwnersSupply = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].supplied.includes(region.name)
+    const inOwnersSupply = territory.isSea() || !controller || controller.name === "Neutral" || supplyStatusByFaction[controller.name].supplied.includes(region.name)
     const inOwnersTrade = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].tradeable.includes(region.name)
 
     let style: RegionStyle = {
@@ -52,6 +54,18 @@ const MapView: React.FC = () => {
           color2: territory.homeTerritoryOf.color
         },
       };
+    }
+    if (!territory.isOccupied()) {
+      if (territory.nation.isInfluenced()) {
+        const faction = factionsByName[territory.nation.influencor()!]
+        return {
+          ...style,
+          pattern: {
+            color1: faction.color,
+            color2: territory.homeTerritoryOf.color
+          },
+        }
+      }
     }
     return style;
   }, [myState]);
@@ -75,16 +89,21 @@ const MapView: React.FC = () => {
     const regionClicked = findRegionAtPoint(mapData, x, y);
     if (!regionClicked) return;
 
+    const territory = territoriesByName[regionClicked.name];
+    if (!territory) {
+      console.warn(`Territory not found: ${regionClicked.name}`);
+      return;
+    }
+    const faction = factionsByName[currentFaction]
+
+    if (currentState === 'Occupy') {
+      territory.occupy(faction);
+    } else if (currentState === 'Influence') {
+      territory.nation.addInfluence(faction)
+    }
+
     setMyState((oldState) => {
       const newTerritoriesByName = { ...oldState.territoriesByName };
-      const territory = newTerritoriesByName[regionClicked.name];
-
-      if (!territory) {
-        console.warn(`Territory not found: ${regionClicked.name}`);
-        return oldState;
-      }
-      territory.occupy(factionsByName[currentFaction]);
-      newTerritoriesByName[regionClicked.name] = territory;
       return {
         ...oldState,
         territoriesByName: newTerritoriesByName,
@@ -103,6 +122,12 @@ const MapView: React.FC = () => {
           break;
         case 'u':
           setCurrentFaction('USSR');
+          break;
+        case 'i':
+          setCurrentMode('Influence');
+          break;
+        case 'o':
+          setCurrentMode('Occupy');
           break;
       }
     };
@@ -140,6 +165,7 @@ const MapView: React.FC = () => {
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
           {currentFaction}
+          {currentState}
           {Object.keys(myState.factionsByName).map((name, index) => <Box key={index} sx={{ backgroundColor: myState.factionsByName[name].color }}>
             <FactionDiv faction={myState.factionsByName[name]} supplyStatus={supplyStatusByFaction[name]} />
           </Box>)}
@@ -150,7 +176,7 @@ const MapView: React.FC = () => {
             regions={mapData.regions}
             vertices={mapData.vertices}
             getRegionStyle={getRegionColor}
-            onClick={handleCanvasClick}
+            onMouseUp={handleCanvasClick}
             showLabels={true}
           />
         </div>
