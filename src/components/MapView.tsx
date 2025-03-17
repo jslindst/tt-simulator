@@ -8,6 +8,7 @@ import { FactionDiv } from './FactionDiv';
 import { Box, Button, SxProps, Theme, Typography } from '@mui/material';
 import WarStateControls from './WarState';
 import { findSuppliedTerritoriesFor, findTradableTerritoriesFor } from 'model/supply';
+import chroma from "chroma-js";
 
 export type TerritoryState = {
   territoriesByName: { [key: string]: Territory };
@@ -94,10 +95,7 @@ const MapView: React.FC = () => {
     if (territory.isSea() && territory.isOccupied()) {
       return {
         ...style,
-        pattern: {
-          color1: territory.occupier!.color,
-          color2: territory.homeTerritoryOf.color
-        },
+        fillColor: chroma.mix(territory.occupier!.color, territory.homeTerritoryOf.color).hex()
       };
     }
     if (!territory.isOccupied()) {
