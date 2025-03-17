@@ -456,6 +456,7 @@ const MapEditor: React.FC = () => {
         <button onClick={handleDownload}>Download JSON</button>
         <input type="file" accept=".json" onChange={handleLoad} />
         <div>Current Mode: {mode}</div>
+        <div>{vertices ? vertices!.filter(v => v.id === selectedVertexId).map(v => <>{JSON.stringify(v)}</>) : <></>}</div>
 
         {/* Region Editing UI */}
         {mode === 'select-region' && selectedRegionId && (

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'; // Import useCallback
 import MapVisualization, { MapMouseEvent, Region, RegionStyle } from './MapVisualization';
 import { SiteAppBar } from '../pages/SiteAppBar';
-import { Faction, factionsByName, territoriesByName, Territory } from '../model/HistoryTracker';
+import { BlockadeLevel, Faction, factionsByName, territoriesByName, Territory } from '../model/HistoryTracker';
 import { findRegionAtPoint } from './MapEditor'; // Make sure you have this export
 import { mapData, neighborLookupNoAfrica, neighborLookupWithAfricaRoute } from 'mapData'; // Ensure this path is correct
 import { FactionDiv } from './FactionDiv';
@@ -25,9 +25,18 @@ export type SupplyStatus = {
   tradeableMED: string[]
 }
 
-const NO_SUPPY_NO_TRADE: Partial<RegionStyle> = {
+const MED_BLOCKED: Partial<RegionStyle> = {
+  drawColor: 'rgba(150, 0, 0, 1)',
+  drawWidth: 6,
+  text: "MED BLOCKED"
+}
+
+const BLOCKED: Partial<RegionStyle> = {
   drawColor: 'rgba(150, 0, 0, 1)',
   drawWidth: 12,
+}
+
+const UNSUPPLIED: Partial<RegionStyle> = {
   pattern: {
     color1: 'black',
     color2: 'red',
@@ -36,41 +45,22 @@ const NO_SUPPY_NO_TRADE: Partial<RegionStyle> = {
   }
 }
 
-const SUPPY_NO_TRADE: Partial<RegionStyle> = {
-  drawColor: 'rgba(150, 0, 0, 1)',
-  drawWidth: 12,
-}
-
-const NO_SUPPLY_TRADE: Partial<RegionStyle> = {
-  drawColor: 'black',
-  drawWidth: 2,
-  pattern: {
-    color1: 'black',
-    color2: 'red',
-    angle: 45,
-    width: 20,
-  }
-
-}
-
-const SUPPLY_TRADE: Partial<RegionStyle> = {
+const OK: Partial<RegionStyle> = {
   drawColor: 'rgba(0, 0, 0, 1)',
   drawWidth: 2,
 }
 
-function getRegionStyle(color: string, inOwnersSupply: boolean, inOwnersTrade: boolean): RegionStyle {
-  let style: Partial<RegionStyle>;
+function getRegionStyle(color: string, inOwnersSupply: boolean, blockade: number): RegionStyle {
+  let style: Partial<RegionStyle> = { ...OK }
 
-  if (inOwnersSupply && inOwnersTrade) {
-    style = SUPPLY_TRADE;
-  } else if (inOwnersSupply && !inOwnersTrade) {
-    style = SUPPY_NO_TRADE;
-  } else if (!inOwnersSupply && inOwnersTrade) {
-    style = NO_SUPPLY_TRADE;
+  if (!inOwnersSupply) {
+    style = { ...style, ...UNSUPPLIED }
     style.pattern!.color2 = color;
-  } else {
-    style = NO_SUPPY_NO_TRADE;
-    style.pattern!.color2 = color;
+  }
+  if (blockade === BlockadeLevel.FULL) {
+    style = { ...style, ...BLOCKED }
+  } else if (blockade === BlockadeLevel.MED) {
+    style = { ...style, ...MED_BLOCKED }
   }
 
   return {
@@ -93,11 +83,14 @@ const MapView: React.FC = () => {
 
     const color = resourcesFor.color;
     const inOwnersSupply = territory.isSea() || !controller || controller.name === "Neutral" || supplyStatusByFaction[controller.name].supplied.includes(region.name)
-    const inOwnersTrade = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].tradeable.includes(region.name)
 
-    if (!inOwnersSupply && inOwnersTrade) console.log("S", territory.name)
 
-    let style: RegionStyle = getRegionStyle(color, inOwnersSupply, inOwnersTrade);
+    const inOwnersTradeTRANS = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].tradeable.includes(region.name)
+    const inOwnersTradeMED = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].tradeableMED.includes(region.name)
+
+    const blockade = inOwnersTradeMED ? BlockadeLevel.NONE : inOwnersTradeTRANS ? BlockadeLevel.MED : BlockadeLevel.FULL;
+
+    let style: RegionStyle = getRegionStyle(color, inOwnersSupply, blockade);
     if (territory.isSea() && territory.isOccupied()) {
       return {
         ...style,
@@ -218,12 +211,13 @@ const MapView: React.FC = () => {
 
   return (
     <div>
-      <SiteAppBar title="Tragedy & Triumph - Map View" />
+      <SiteAppBar title="Tragedy & Triumph - Map Resource Tracker v1.0" />
       <div style={{ marginTop: '20px', padding: '0 20px' }}>
         <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center', gap: 2, alignItems: 'center' }}>
           <WarStateControls faction1="Axis" faction2="West" onWarChange={warStateUpdater} />
           <WarStateControls faction1="Axis" faction2="USSR" onWarChange={warStateUpdater} />
           <WarStateControls faction1="West" faction2="USSR" onWarChange={warStateUpdater} />
+
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
           <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center', gap: 2, alignItems: 'center' }}>
@@ -244,12 +238,11 @@ const MapView: React.FC = () => {
           </Box></Box>
         <div style={{ maxWidth: '100%', maxHeight: '100%', overflow: 'auto', border: '1px solid #ccc' }}>
           <MapVisualization
-            imageSrc="TTmap2ndEd.jpg"
             regions={mapData.regions}
             vertices={mapData.vertices}
             getRegionStyle={getRegionColor}
             onMouseUp={handleCanvasClick}
-            showLabels={false}
+            showLabels={true}
           />
         </div>
       </div>

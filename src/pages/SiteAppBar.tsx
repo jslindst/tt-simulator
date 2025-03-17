@@ -51,9 +51,7 @@ export const SiteAppBar: React.FC<{ title: string, actionButton?: any, help?: an
             }}
           >
             <MenuItem onClick={() => goTo('/')}>Combat Simulator</MenuItem>
-            <MenuItem onClick={() => goTo('/resourceTracker')}>Resource Tracker</MenuItem>
-            <MenuItem onClick={() => goTo('/mapView')}>Map View</MenuItem>
-            <MenuItem onClick={() => goTo('/mapEditor')}>Map Editor</MenuItem>
+            <MenuItem onClick={() => goTo('/mapView')}>Map Resource Tracker</MenuItem>
           </Menu>
           <Typography style={{ fontSize: "15px" }} variant="h6" component="div" sx={{ flexGrow: 1 }}>
             {props.title}

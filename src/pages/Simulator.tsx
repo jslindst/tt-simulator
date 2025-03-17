@@ -710,7 +710,7 @@ function Simulator() {
   return (
     <div className="App">
       <SiteAppBar
-        title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator v1.12"}
+        title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator v1.13"}
         help={<HelpDialogSlide
           title={"Tragedy & Triumph / Conquest & Consequence - Combat Simulator"}
           content={SIMULATOR_HELP_TEXT()}

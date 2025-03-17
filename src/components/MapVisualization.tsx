@@ -1,3 +1,4 @@
+import { Box } from '@mui/material';
 import { territoriesByName, Territory } from 'model/HistoryTracker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
@@ -101,8 +102,16 @@ export interface MapMouseEvent {
   originalEvent: React.MouseEvent<HTMLCanvasElement>; // Keep a reference to original
 }
 
+
+const defaultImage = {
+  naturalWidth: 3400,
+  naturalHeight: 2200,
+  width: 3400,
+  height: 2200,
+}
+
 interface MapVisualizationProps {
-  imageSrc: string;
+  imageSrc?: string;
   regions: Region[];
   vertices: Point[];
   getRegionStyle?: (region: Region) => RegionStyle;
@@ -139,7 +148,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   // Calculate scale based on container and image size
   const calculateScale = useCallback(() => {
     const container = containerRef.current;
-    const image = imageRef.current;
+    const image = imageSrc ? imageRef.current : defaultImage;
 
     if (container && image) {
       const containerWidth = container.clientWidth;
@@ -161,7 +170,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
 
   const draw = useCallback(async () => {
     const canvas = canvasRef.current;
-    const image = imageRef.current;
+    const image = imageSrc ? imageRef.current : defaultImage;
     if (!canvas || !image) return;
 
     const ctx = canvas.getContext('2d');
@@ -172,8 +181,18 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     ctx.scale(scale, scale);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(image, 0, 0);
-
+    if (image !== defaultImage) ctx.drawImage(image as CanvasImageSource, 0, 0);
+    if (image === defaultImage) {
+      const pattern = getOrCreateNonRepeatingPattern({
+        pattern: {
+          color1: 'rgb(218, 199, 217)',
+          color2: 'rgb(181, 158, 176)',
+          angle: 45
+        }
+      }, 10, image.width, image.height, ctx);
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, 0, image.width, image.height);
+    }
     regions.forEach(region => {
       if (region.vertices.length < 3) return;
       const regionStyle = getRegionStyle(region);
@@ -229,27 +248,29 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.setLineDash([]); // Reset after drawing each region
 
 
-      let sumX = 0;
-      let sumY = 0;
-      for (const point of points) {
-        sumX += point.x;
-        sumY += point.y;
-      }
-      const centerX = sumX / points.length;
-      const centerY = sumY / points.length;
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
 
-      if (showLabels) {
+      for (const point of points) {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+      }
+
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+
+      if (showLabels && regionStyle.text) {
         ctx.fillStyle = 'black';
         ctx.font = regionStyle.font || '18px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(regionStyle.text || region.name, centerX, centerY);
+        ctx.fillText(regionStyle.text, centerX, centerY);
       }
 
-      // --- Draw SVG Icon (Corrected) ---
-      if (territoriesByName[region.name]?.CityType === 'MainCapital' || territoriesByName[region.name]?.CityType === 'SubCapital') { //Added ? to avoid errors.
-        drawCapital(ctx, { territory: territoriesByName[region.name], x: centerX, y: centerY, scale: 0.75 })
-      }
     });
 
 
@@ -264,6 +285,15 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.strokeStyle = style.drawColor;
       ctx.stroke();
     });
+
+    regions.forEach(region => {
+      if (territoriesByName[region.name]?.CityType === 'MainCapital' || territoriesByName[region.name]?.CityType === 'SubCapital') {
+        const location = vertices.find(v => v.id === region.name);
+        if (location) {
+          drawCapital(ctx, { territory: territoriesByName[region.name], x: location.x, y: location.y, scale: 0.8 })
+        }
+      }
+    })
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -311,10 +341,9 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     }
   };
 
-
   return (
-    <div ref={containerRef} style={{ width, height, position: 'relative' }}>
-      <img
+    <div ref={containerRef} style={{ width, height, position: 'relative', backgroundColor: 'rgba(240, 140, 220, 1' }}>
+      {imageSrc && <img
         ref={imageRef}
         src={imageSrc}
         alt="Map"
@@ -323,7 +352,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
           calculateScale();
           draw();
         }}
-      />
+      />}
       <canvas
         ref={canvasRef}
         style={{ cursor, width: '100%', height: '100%' }}
@@ -392,7 +421,7 @@ const drawCapital = (ctx: CanvasRenderingContext2D, props: CapitalProps) => {
   }
   ctx.closePath();
   ctx.fillStyle = territory.isMainCapital() ? territory.startingFaction().darkTone : territory.startingFaction().color
-  ctx.strokeStyle = 'black'; // Add stroke back
+  ctx.strokeStyle = territory.isMainCapital() ? territory.startingFaction().darkTone : territory.startingFaction().color
   ctx.lineWidth = 1;
   ctx.fill();
   ctx.stroke(); // Stroke the star
