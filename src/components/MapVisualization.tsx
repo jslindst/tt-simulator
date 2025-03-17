@@ -1,3 +1,4 @@
+import { territoriesByName, Territory } from 'model/HistoryTracker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 export interface Point {
@@ -158,9 +159,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     return () => { window.removeEventListener('resize', handleResize); };
   }, [calculateScale]);
 
-  const draw = useCallback(() => {
-    const container = containerRef.current;
-
+  const draw = useCallback(async () => {
     const canvas = canvasRef.current;
     const image = imageRef.current;
     if (!canvas || !image) return;
@@ -229,23 +228,30 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       // --- Reset Line Dash (Important!) ---
       ctx.setLineDash([]); // Reset after drawing each region
 
-      if (showLabels) {
-        let sumX = 0;
-        let sumY = 0;
-        for (const point of points) {
-          sumX += point.x;
-          sumY += point.y;
-        }
-        const centerX = sumX / points.length;
-        const centerY = sumY / points.length;
 
+      let sumX = 0;
+      let sumY = 0;
+      for (const point of points) {
+        sumX += point.x;
+        sumY += point.y;
+      }
+      const centerX = sumX / points.length;
+      const centerY = sumY / points.length;
+
+      if (showLabels) {
         ctx.fillStyle = 'black';
         ctx.font = regionStyle.font || '18px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(regionStyle.text || region.name, centerX, centerY);
       }
+
+      // --- Draw SVG Icon (Corrected) ---
+      if (territoriesByName[region.name]?.CityType === 'MainCapital' || territoriesByName[region.name]?.CityType === 'SubCapital') { //Added ? to avoid errors.
+        drawCapital(ctx, { territory: territoriesByName[region.name], x: centerX, y: centerY, scale: 0.75 })
+      }
     });
+
 
     customRenderFunctions.forEach(renderFn => renderFn(ctx));
 
@@ -328,5 +334,71 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     </div>
   );
 };
+
+
+interface CapitalProps {
+  territory: Territory;
+  x: number; // X-coordinate of the center
+  y: number; // Y-coordinate of the center
+  scale?: number; // Optional: Scale factor
+}
+
+const drawCapital = (ctx: CanvasRenderingContext2D, props: CapitalProps) => {
+  const { territory, x, y, scale = 1 } = props;
+  ctx.save(); // Save the current context state
+
+  ctx.translate(x, y); // Translate to the center point
+  ctx.scale(scale, scale); // Apply scaling
+
+  // Scale down (same as your SVG's scale)
+  const internalScale = 0.6;
+  ctx.scale(internalScale, internalScale);
+
+  // --- Drawing Logic (Same as before, but with x, y, and scale) ---
+
+  // Draw outer circle (only if main capital)
+  if (territory.isMainCapital()) {
+    ctx.beginPath();
+    ctx.arc(0, 0, 75, 0, 2 * Math.PI);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Draw middle circle
+  ctx.beginPath();
+  ctx.arc(0, 0, 65, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw inner circle
+  ctx.beginPath();
+  ctx.arc(0, 0, 55, 0, 2 * Math.PI);
+  ctx.fillStyle = 'white';
+  ctx.fill();
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw star polygon
+  const points = "0,-50 29.39,40.45 -47.55,-15.45 47.55,-15.45 -29.39,40.45";
+  const pointsArray = points.split(' ').map(p => p.split(',').map(Number));
+
+  ctx.beginPath();
+  ctx.moveTo(pointsArray[0][0], pointsArray[0][1]);
+  for (let i = 1; i < pointsArray.length; i++) {
+    ctx.lineTo(pointsArray[i][0], pointsArray[i][1]);
+  }
+  ctx.closePath();
+  ctx.fillStyle = territory.isMainCapital() ? territory.startingFaction().darkTone : territory.startingFaction().color
+  ctx.strokeStyle = 'black'; // Add stroke back
+  ctx.lineWidth = 1;
+  ctx.fill();
+  ctx.stroke(); // Stroke the star
+
+  ctx.restore(); // Restore the context to its original state
+};
+
 
 export default MapVisualization;

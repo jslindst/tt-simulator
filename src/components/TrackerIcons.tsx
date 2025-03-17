@@ -84,7 +84,6 @@ interface CapitalProps {
 }
 
 export const Capital: React.FC<CapitalProps> = ({ territory }) => {
-  if (!territory.isMainCapital() && !territory.isSubCapital()) return <></>;
   return (
     <svg
       id={territory.name}

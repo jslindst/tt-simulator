@@ -5,6 +5,8 @@ import styled from "styled-components";
 import { Faction, Territory } from "../model/HistoryTracker";
 import { TerritoryItem } from "./item";
 import { FactionDiv } from "./FactionDiv";
+import { Box } from "@mui/material";
+import { InsertDriveFileSharp } from "@mui/icons-material";
 
 const Container = styled.div`
   margin: 4px;
@@ -16,13 +18,15 @@ const Container = styled.div`
   flex-direction: column;
 `;
 
-const TerritoryList = styled.div<{ isDraggingOver: boolean; faction: Faction }>`
-  transition: background-color 0.2s ease;
-  padding: 8px;
-  background-color: ${props => (props.isDraggingOver ? props.faction.darkTone : props.faction.color)};
-  flex-grow: 1;
-  min-height: 100px;
-`;
+const style = (isDraggingOver: boolean, faction: Faction) => {
+  return {
+    transition: "background-color 0.2s ease",
+    padding: "8px",
+    backgroundColor: `${isDraggingOver ? faction.darkTone : faction.color}`,
+    flexGrow: 1,
+    minHeight: "100px"
+  }
+}
 
 interface FactionColumnProps {
   faction: Faction;
@@ -31,9 +35,6 @@ interface FactionColumnProps {
   addTerritoryField: React.ReactNode;
   blockadeUpdateFunction: (territory: Territory, blockadeLevel: number) => void;
 }
-
-
-
 
 export default class FactionColumn extends React.Component<FactionColumnProps> { // Use the interface here
   render() {
@@ -53,12 +54,10 @@ export default class FactionColumn extends React.Component<FactionColumnProps> {
           isDropDisabled={this.props.isDropDisabled}
           droppableId={faction.name}>
           {(provided, snapshot) => (
-            <TerritoryList
+            <Box
               ref={provided.innerRef}
               {...provided.droppableProps}
-              isDraggingOver={snapshot.isDraggingOver}
-              faction={faction}
-            >
+              sx={{ ...style(snapshot.isDraggingOver, faction) }}>
               <FactionDiv faction={faction} />
               {this.props.addTerritoryField}
 
@@ -72,7 +71,7 @@ export default class FactionColumn extends React.Component<FactionColumnProps> {
                 />
               ))}
               {provided.placeholder}
-            </TerritoryList>
+            </Box>
           )}
         </Droppable>
       </Container>
