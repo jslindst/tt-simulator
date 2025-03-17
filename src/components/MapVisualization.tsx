@@ -22,68 +22,72 @@ export type VertexStyle = {
   drawColor: string;
 }
 
-export type RegionStyle = {
+export type RegionStyle = Partial<{
   fillColor: string;
   drawColor: string;
   drawWidth: number;
-  pattern?: {
+  pattern: {
     color1: string,
     color2: string,
     angle?: number,
+    width?: number,
   }
-  font?: string,
-  text?: string,
-  dashed?: number[]
-}
+  font: string,
+  text: string,
+  dashed: number[]
+}>
 
 const patternCache = new Map();
 
-function getOrCreatePattern(regionStyle: RegionStyle, patternWidth: number, ctx: CanvasRenderingContext2D) {
-  if (!regionStyle.pattern) return
-  const key = `${regionStyle.pattern.color1}-${regionStyle.pattern.color2}-${regionStyle.pattern.angle}`;
+function getOrCreateNonRepeatingPattern(
+  regionStyle: RegionStyle,
+  patternWidth: number,
+  imageWidth: number,
+  imageHeight: number,
+  ctx: CanvasRenderingContext2D // Add ctx back as a parameter
+) {
+  if (!regionStyle.pattern) return null;
+
+  const key = `${regionStyle.pattern.color1}-${regionStyle.pattern.color2}-${regionStyle.pattern.angle}-${imageWidth}-${imageHeight}`;
 
   if (patternCache.has(key)) {
-    console.info("Found pattern in cache.");
     return patternCache.get(key);
   }
 
   const angle = regionStyle.pattern.angle || 0;
 
-  // Calculate a larger pattern size to ensure continuous stripes
-  const patternSize = patternWidth * 100; // Increase as needed for wider stripes or steeper angles
-
   const patternCanvas = document.createElement('canvas');
-  patternCanvas.width = patternSize;
-  patternCanvas.height = patternSize;
+  patternCanvas.width = imageWidth;
+  patternCanvas.height = imageHeight;
   const patternCtx = patternCanvas.getContext('2d');
-  if (!patternCtx) return;
+  if (!patternCtx) return null;
 
-  // 1. Rotate the pattern context *before* drawing
-  patternCtx.translate(patternCanvas.width / 2, patternCanvas.height / 2);
-  patternCtx.rotate(angle);
-  patternCtx.translate(-patternCanvas.width / 2, -patternCanvas.height / 2);
+  // 1. Rotate the context *before* drawing
+  //  patternCtx.translate(imageWidth / 2, imageHeight / 2);
+  patternCtx.rotate((angle * Math.PI) / 180);
+  //  patternCtx.translate(-imageWidth / 2, -imageHeight / 2);
 
+  // 2. Calculate stripe positions
+  const stripeWidth = patternWidth;
+  const diagonal = Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight);
+  const numStripes = Math.ceil(diagonal / stripeWidth);
 
-  // 2. Draw stripes that extend beyond the canvas bounds
-  const stripeWidth = patternWidth;  // Keep the stripe width consistent
-  const numStripes = Math.ceil(patternSize * 2 / stripeWidth); // Draw enough stripes to cover the rotated area
-  for (let i = -numStripes / 2; i < numStripes / 2; i++) {
-
+  for (let i = -numStripes; i <= numStripes; i++) {
     patternCtx.fillStyle = i % 2 === 0 ? regionStyle.pattern.color1 : regionStyle.pattern.color2;
     patternCtx.fillRect(
       i * stripeWidth,
-      0,
+      -diagonal,
       stripeWidth,
-      patternSize
+      diagonal * 3
     );
   }
 
-  // 3. Reset transformations *before* creating the pattern
+  // 3. Reset transformations
   patternCtx.setTransform(1, 0, 0, 1, 0, 0);
 
-  const pattern = ctx.createPattern(patternCanvas, 'repeat');
-  if (!pattern) return;
-
+  // 4. Create the pattern (this is the key change)
+  const pattern = ctx.createPattern(patternCanvas, 'no-repeat'); // Use 'no-repeat'
+  if (!pattern) return null;
 
   patternCache.set(key, pattern);
   return pattern;
@@ -155,6 +159,8 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   }, [calculateScale]);
 
   const draw = useCallback(() => {
+    const container = containerRef.current;
+
     const canvas = canvasRef.current;
     const image = imageRef.current;
     if (!canvas || !image) return;
@@ -185,9 +191,9 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       }
       ctx.closePath();
       if (regionStyle.pattern) {
-        ctx.fillStyle = getOrCreatePattern(regionStyle, 34, ctx);
+        ctx.fillStyle = getOrCreateNonRepeatingPattern(regionStyle, regionStyle.pattern.width || 30, image.width, image.height, ctx);
       } else {
-        ctx.fillStyle = regionStyle.fillColor;
+        ctx.fillStyle = regionStyle.fillColor || 'white';
       }
       ctx.fill();
     });
@@ -208,8 +214,8 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       }
       ctx.closePath();
 
-      ctx.strokeStyle = regionStyle.drawColor;
-      ctx.lineWidth = regionStyle.drawWidth;
+      ctx.strokeStyle = regionStyle.drawColor || 'white';;
+      ctx.lineWidth = regionStyle.drawWidth || 2;;
 
       // --- Dashed Lines ---
       if (regionStyle.dashed) {

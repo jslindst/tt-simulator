@@ -3,7 +3,6 @@ import MapVisualization, { Point, Region, MapData, RegionStyle, VertexStyle, Map
 
 type Mode = 'none' | 'add' | 'move' | 'delete' | 'create-region' | 'select-region' | 'split-edge'; // Added split-edge mode
 
-
 // --- Region Selection and Editing ---
 export const findRegionAtPoint = (data: MapData, x: number, y: number): Region | null => {
   for (let i = data.regions.length - 1; i >= 0; i--) {
