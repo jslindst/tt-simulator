@@ -5,7 +5,7 @@ import { Faction, factionsByName, territoriesByName, Territory } from '../model/
 import { findRegionAtPoint } from './MapEditor'; // Make sure you have this export
 import { mapData, neighborLookupNoAfrica, neighborLookupWithAfricaRoute } from 'mapData'; // Ensure this path is correct
 import { FactionDiv } from './FactionDiv';
-import { Box } from '@mui/material';
+import { Box, Button, SxProps, Theme, Typography } from '@mui/material';
 import WarStateControls from './WarState';
 import { findSuppliedTerritoriesFor, findTradableTerritoriesFor } from 'model/supply';
 
@@ -28,7 +28,7 @@ export type SupplyStatus = {
 const MapView: React.FC = () => {
   const [myState, setMyState] = useState<TerritoryState>(initialState);
   const [currentFaction, setCurrentFaction] = useState<string>("Axis");
-  const [currentState, setCurrentMode] = useState<"Influence" | "Occupy">("Influence");
+  const [currentMode, setCurrentMode] = useState<"Influence" | "Control">("Influence");
 
   const getRegionColor = useCallback((region: Region): RegionStyle => {
     const territory = myState.territoriesByName[region.name];
@@ -40,11 +40,14 @@ const MapView: React.FC = () => {
     const inOwnersSupply = territory.isSea() || !controller || controller.name === "Neutral" || supplyStatusByFaction[controller.name].supplied.includes(region.name)
     const inOwnersTrade = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].tradeable.includes(region.name)
 
+
+
     let style: RegionStyle = {
       drawColor: inOwnersSupply ? inOwnersTrade ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 150, 1)' : 'rgba(150, 0, 0, 1)',
       drawWidth: inOwnersSupply ? inOwnersTrade ? 2 : 5 : 10,
       text: territory.controlledBy()?.name,
-      fillColor: color
+      fillColor: color,
+      //      dashed: territory.isStrait() ? [15, 15] : []
     }
     if (territory.isSea() && territory.isOccupied()) {
       return {
@@ -96,9 +99,9 @@ const MapView: React.FC = () => {
     }
     const faction = factionsByName[currentFaction]
 
-    if (currentState === 'Occupy') {
+    if (currentMode === 'Control') {
       territory.occupy(faction);
-    } else if (currentState === 'Influence') {
+    } else if (currentMode === 'Influence') {
       territory.nation.addInfluence(faction)
     }
 
@@ -123,11 +126,15 @@ const MapView: React.FC = () => {
         case 'u':
           setCurrentFaction('USSR');
           break;
+        case 'n':
+          setCurrentFaction('Neutral');
+          break;
+
         case 'i':
           setCurrentMode('Influence');
           break;
-        case 'o':
-          setCurrentMode('Occupy');
+        case 'c':
+          setCurrentMode('Control');
           break;
       }
     };
@@ -153,23 +160,40 @@ const MapView: React.FC = () => {
     })
   }
 
+  const factions = Object.keys(myState.factionsByName).map(name => myState.factionsByName[name]);
+
+
+  const selectedStyle: SxProps<Theme> = {
+    backgroundColor: '#B2D7FF', border: 2, color: 'black'
+  }
+
   return (
     <div>
       <SiteAppBar title="Tragedy & Triumph - Map View" />
       <div style={{ marginTop: '20px', padding: '0 20px' }}>
-        <h2>Game Map View</h2>
-        <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center', gap: 2, alignItems: 'center' }}>
           <WarStateControls faction1="Axis" faction2="West" onWarChange={warStateUpdater} />
           <WarStateControls faction1="Axis" faction2="USSR" onWarChange={warStateUpdater} />
           <WarStateControls faction1="West" faction2="USSR" onWarChange={warStateUpdater} />
+          {currentFaction}
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
-          {currentFaction}
-          {currentState}
-          {Object.keys(myState.factionsByName).map((name, index) => <Box key={index} sx={{ backgroundColor: myState.factionsByName[name].color }}>
-            <FactionDiv faction={myState.factionsByName[name]} supplyStatus={supplyStatusByFaction[name]} />
-          </Box>)}
-        </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center', gap: 2, alignItems: 'center' }}>
+            <Button size='small' sx={{ ...(currentMode === "Influence" ? selectedStyle : {}) }} onClick={() => setCurrentMode('Influence')} variant='contained'>Influence [I]</Button>
+            <Button size='small' sx={{ ...(currentMode === "Control" ? selectedStyle : {}) }} onClick={() => setCurrentMode('Control')} variant='contained'>Control [C]</Button>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center', alignItems: 'center', marginRight: 2, marginLeft: 2 }}>
+            {factions.filter(f => f.name !== "Neutral").map((faction, index) => <Box key={index} sx={{ backgroundColor: faction.color }}>
+              <FactionDiv faction={faction} supplyStatus={supplyStatusByFaction[faction.name]} />
+
+            </Box>)}
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center', gap: 2, alignItems: 'center' }}>
+            <Button size='small' sx={{ ...(currentFaction === "Axis" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("Axis")} variant='contained'>Axis [A]</Button>
+            <Button size='small' sx={{ ...(currentFaction === "West" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("West")} variant='contained'>West [W]</Button>
+            <Button size='small' sx={{ ...(currentFaction === "USSR" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("USSR")} variant='contained'>USSR [U]</Button>
+            <Button size='small' sx={{ ...(currentFaction === "Neutral" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("Neutral")} variant='contained'>Neutral [N]</Button>
+          </Box></Box>
         <div style={{ maxWidth: '100%', maxHeight: '100%', overflow: 'auto', border: '1px solid #ccc' }}>
           <MapVisualization
             imageSrc="TTmap2ndEd.jpg"
@@ -177,7 +201,7 @@ const MapView: React.FC = () => {
             vertices={mapData.vertices}
             getRegionStyle={getRegionColor}
             onMouseUp={handleCanvasClick}
-            showLabels={true}
+            showLabels={false}
           />
         </div>
       </div>

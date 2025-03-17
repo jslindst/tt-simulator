@@ -466,7 +466,8 @@ export class Territory {
   }
 
   occupy(faction: Faction) {
-    this.occupier = faction;
+    if (faction.name === "Neutral") this.occupier = undefined;
+    else this.occupier = faction;
     this.blockadeLevel = BlockadeLevel.NONE;
   }
 

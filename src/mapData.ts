@@ -48,9 +48,6 @@ export const mapData = loadedMapData
 
 export const neighborLookupNoAfrica = findNeighboringRegions(loadedMapData);
 export const neighborLookupWithAfricaRoute = findNeighboringRegions(loadedMapData);
-
 neighborLookupWithAfricaRoute["West Indian Ocean"].push("South Atlantic Ocean");
 neighborLookupWithAfricaRoute["South Atlantic Ocean"].push("West Indian Ocean");
 
-console.log("no", neighborLookupNoAfrica)
-console.log("with", neighborLookupWithAfricaRoute)

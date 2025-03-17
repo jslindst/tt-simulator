@@ -29,9 +29,64 @@ export type RegionStyle = {
   pattern?: {
     color1: string,
     color2: string,
+    angle?: number,
   }
   font?: string,
   text?: string,
+  dashed?: number[]
+}
+
+const patternCache = new Map();
+
+function getOrCreatePattern(regionStyle: RegionStyle, patternWidth: number, ctx: CanvasRenderingContext2D) {
+  if (!regionStyle.pattern) return
+  const key = `${regionStyle.pattern.color1}-${regionStyle.pattern.color2}-${regionStyle.pattern.angle}`;
+
+  if (patternCache.has(key)) {
+    console.info("Found pattern in cache.");
+    return patternCache.get(key);
+  }
+
+  const angle = regionStyle.pattern.angle || 0;
+
+  // Calculate a larger pattern size to ensure continuous stripes
+  const patternSize = patternWidth * 100; // Increase as needed for wider stripes or steeper angles
+
+  const patternCanvas = document.createElement('canvas');
+  patternCanvas.width = patternSize;
+  patternCanvas.height = patternSize;
+  const patternCtx = patternCanvas.getContext('2d');
+  if (!patternCtx) return;
+
+  // 1. Rotate the pattern context *before* drawing
+  patternCtx.translate(patternCanvas.width / 2, patternCanvas.height / 2);
+  patternCtx.rotate(angle);
+  patternCtx.translate(-patternCanvas.width / 2, -patternCanvas.height / 2);
+
+
+  // 2. Draw stripes that extend beyond the canvas bounds
+  const stripeWidth = patternWidth;  // Keep the stripe width consistent
+  const numStripes = Math.ceil(patternSize * 2 / stripeWidth); // Draw enough stripes to cover the rotated area
+  for (let i = -numStripes / 2; i < numStripes / 2; i++) {
+
+    patternCtx.fillStyle = i % 2 === 0 ? regionStyle.pattern.color1 : regionStyle.pattern.color2;
+    patternCtx.fillRect(
+      i * stripeWidth,
+      0,
+      stripeWidth,
+      patternSize
+    );
+  }
+
+  // 3. Reset transformations *before* creating the pattern
+  patternCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+  const pattern = ctx.createPattern(patternCanvas, 'repeat');
+  if (!pattern) return;
+
+
+  patternCache.set(key, pattern);
+  return pattern;
 }
 
 // --- NEW: Custom Event Interfaces ---
@@ -114,7 +169,6 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(image, 0, 0);
 
-    // draw the fill first
     regions.forEach(region => {
       if (region.vertices.length < 3) return;
       const regionStyle = getRegionStyle(region);
@@ -130,24 +184,8 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
         ctx.lineTo(points[i].x, points[i].y);
       }
       ctx.closePath();
-
       if (regionStyle.pattern) {
-        const patternWidth = 34;
-        let pattern: CanvasPattern | null = null;
-        const patternCanvas = document.createElement('canvas');
-        patternCanvas.width = patternWidth * 2;
-        patternCanvas.height = patternWidth * 2;
-        const patternCtx = patternCanvas.getContext('2d');
-        if (!patternCtx) return
-
-
-        patternCtx.fillStyle = regionStyle.pattern.color1
-        patternCtx.fillRect(0, 0, patternWidth, patternWidth * 2);
-
-        patternCtx.fillStyle = regionStyle.pattern.color2
-        patternCtx.fillRect(patternWidth, 0, patternWidth, patternWidth * 2);
-        pattern = ctx.createPattern(patternCanvas, 'repeat');
-        ctx.fillStyle = pattern!;
+        ctx.fillStyle = getOrCreatePattern(regionStyle, 34, ctx);
       } else {
         ctx.fillStyle = regionStyle.fillColor;
       }
@@ -172,7 +210,18 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
 
       ctx.strokeStyle = regionStyle.drawColor;
       ctx.lineWidth = regionStyle.drawWidth;
+
+      // --- Dashed Lines ---
+      if (regionStyle.dashed) {
+        ctx.setLineDash(regionStyle.dashed); // Use a dash pattern from regionStyle
+      } else {
+        ctx.setLineDash([]); // Reset to solid line (important!)
+      }
+
       ctx.stroke();
+
+      // --- Reset Line Dash (Important!) ---
+      ctx.setLineDash([]); // Reset after drawing each region
 
       if (showLabels) {
         let sumX = 0;
