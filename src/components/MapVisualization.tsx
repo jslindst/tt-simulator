@@ -164,21 +164,35 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Calculate scale based on container and image size
   const calculateScale = useCallback(() => {
     const container = containerRef.current;
     const image = imageSrc ? imageRef.current : defaultImage;
 
     if (container && image) {
       const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
-      const newScale = Math.min(
-        containerWidth / image.naturalWidth,
-        containerHeight / image.naturalHeight
-      );
-      setScale(newScale);
+      const intrinsicScale = containerWidth / image.naturalWidth;
+      setScale(intrinsicScale);
+
+      const dpr = window.devicePixelRatio || 1;
+      const canvasWidth = image.naturalWidth * intrinsicScale;
+      const canvasHeight = image.naturalHeight * intrinsicScale;
+
+      if (canvasRef.current) {
+        canvasRef.current.width = canvasWidth * dpr;
+        canvasRef.current.height = canvasHeight * dpr;
+        canvasRef.current.style.width = `${canvasWidth}px`;
+        canvasRef.current.style.height = `${canvasHeight}px`;
+
+        const ctx = canvasRef.current.getContext('2d'); // Moved inside the if
+        if (ctx) {
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          // NO SCALING HERE: ctx.scale(intrinsicScale * dpr, intrinsicScale * dpr);
+        }
+
+      }
     }
-  }, []);
+  }, [imageSrc]);
+
 
   useEffect(() => {
     calculateScale();
@@ -195,9 +209,13 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = image.naturalWidth * scale;
-    canvas.height = image.naturalHeight * scale;
-    ctx.scale(scale, scale);
+    const dpr = window.devicePixelRatio || 1; // Get device pixel ratio
+    canvas.width = image.naturalWidth * scale * dpr;  // Multiply by DPR
+    canvas.height = image.naturalHeight * scale * dpr; // Multiply by DPR
+    canvas.style.width = `${image.naturalWidth * scale}px`;   // Set CSS width (original size)
+    canvas.style.height = `${image.naturalHeight * scale}px`; // Set CSS height
+    ctx.scale(scale * dpr, scale * dpr); // Scale by DPR *and* your zoom scale
+
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (image !== defaultImage) ctx.drawImage(image as CanvasImageSource, 0, 0);
@@ -324,21 +342,20 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   // --- Transform Mouse Events ---
   const transformMouseEvent = (event: React.MouseEvent<HTMLCanvasElement>): MapMouseEvent => {
     const canvas = canvasRef.current;
-    if (!canvas) { // Return a default object if canvas is null
+    if (!canvas) {
       return { x: 0, y: 0, originalEvent: event };
     }
 
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const dpr = window.devicePixelRatio || 1;
 
-    // Coordinates in the *original* image space (not scaled, not relative to canvas element)
-    const x = (event.clientX - rect.left) * scaleX / scale;
-    const y = (event.clientY - rect.top) * scaleY / scale;
-
+    // Calculate x and y relative to canvas, scaled to original image size, NO DPR.
+    const x = (event.clientX - rect.left) / scale;
+    const y = (event.clientY - rect.top) / scale;
 
     return { x, y, originalEvent: event };
   };
+
 
   // --- Event Handlers (using transformed events) ---
 
@@ -361,7 +378,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   };
 
   return (
-    <div ref={containerRef} style={{ width, height, position: 'relative', backgroundColor: 'rgba(240, 140, 220, 1' }}>
+    <div ref={containerRef} style={{ width, height, position: 'relative' }}>
       {imageSrc && <img
         ref={imageRef}
         src={imageSrc}
