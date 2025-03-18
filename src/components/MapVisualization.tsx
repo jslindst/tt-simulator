@@ -260,8 +260,6 @@ function findAdjustedCentroid(
   }
 
   const centroid = getCentroid(region, vertices)
-  if (!isPointInPolygon(centroid.x, centroid.y, vertices)) console.log("!!!")
-
   let newPoint = centroid;
   newPoint = findAdjustedPoint(newPoint, region, vertices, 'vertical');
   newPoint = findAdjustedPoint(newPoint, region, vertices, 'horizontal');
