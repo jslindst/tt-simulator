@@ -475,6 +475,7 @@ export class Territory {
     }
     if (faction.name === "Neutral") {
       this.occupier = undefined;
+      this.escapedSub = undefined;
       return;
     }
     if (this.isSea()) {
