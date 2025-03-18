@@ -98,6 +98,8 @@ const MapView: React.FC = () => {
     if (territory.isSea() && territory.isOccupied()) {
       return {
         ...style,
+        font: 'bold 20pt Arial',
+        text: territory.escapedSub ? `SUB [${territory.escapedSub.name}]` : '',
         fillColor: chroma.mix(territory.occupier!.color, territory.homeTerritoryOf.color).hex()
       };
     }
@@ -253,7 +255,7 @@ const MapView: React.FC = () => {
             routes={route}
             getRegionStyle={getRegionColor}
             onMouseUp={handleCanvasClick}
-            showLabels={true}
+            showLabels={false}
           />
         </div>
       </div>

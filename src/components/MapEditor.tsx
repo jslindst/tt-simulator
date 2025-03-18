@@ -15,7 +15,7 @@ export const findRegionAtPoint = (data: MapData, x: number, y: number): Region |
   return null;
 };
 
-const isPointInPolygon = (x: number, y: number, vertices: Point[]): boolean => {
+export const isPointInPolygon = (x: number, y: number, vertices: Point[]): boolean => {
   let isInside = false;
   for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
     const xi = vertices[i].x, yi = vertices[i].y;

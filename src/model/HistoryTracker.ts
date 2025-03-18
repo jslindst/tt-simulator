@@ -393,6 +393,7 @@ export class Territory {
   id: string;
   name: string;
   occupier?: Faction;
+  escapedSub?: Faction;
   homeTerritoryOf: Faction;
   nation: Nation;
   RES: number;
@@ -466,9 +467,20 @@ export class Territory {
   }
 
   occupy(faction: Faction) {
-    if (faction.name === "Neutral") this.occupier = undefined;
-    else this.occupier = faction;
     this.blockadeLevel = BlockadeLevel.NONE;
+    if (faction.name === this.occupier?.name) {
+      // can't occupy ones own, but clear out subs
+      this.escapedSub = undefined;
+      return;
+    }
+    if (faction.name === "Neutral") {
+      this.occupier = undefined;
+      return;
+    }
+    if (this.isSea()) {
+      this.escapedSub = this.occupier
+    }
+    this.occupier = faction;
   }
 
   startingFaction(): Faction {

@@ -1,6 +1,7 @@
 import { Box } from '@mui/material';
 import { territoriesByName, Territory } from 'model/HistoryTracker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { isPointInPolygon } from './MapEditor';
 
 export interface Point {
   x: number;
@@ -121,6 +122,153 @@ export interface MapMouseEvent {
   originalEvent: React.MouseEvent<HTMLCanvasElement>; // Keep a reference to original
 }
 
+
+// Helper function: Line segment intersection
+// Returns the intersection point if the segments intersect, otherwise null.
+function lineSegmentIntersection(
+  p1: { x: number, y: number },
+  p2: { x: number, y: number },
+  q1: { x: number, y: number },
+  q2: { x: number, y: number }
+): { x: number, y: number } | null {
+  // Calculate direction vectors
+  const r = { x: p2.x - p1.x, y: p2.y - p1.y };
+  const s = { x: q2.x - q1.x, y: q2.y - q1.y };
+
+  const rCrossS = r.x * s.y - r.y * s.x;
+  const qMinusP = { x: q1.x - p1.x, y: q1.y - p1.y };
+
+  // Parallel lines
+  if (rCrossS === 0) {
+    return null;
+  }
+
+  const t = (qMinusP.x * s.y - qMinusP.y * s.x) / rCrossS;
+  const u = (qMinusP.x * r.y - qMinusP.y * r.x) / rCrossS;
+
+  // Check if intersection point is within both segments
+  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+    return {
+      x: p1.x + t * r.x,
+      y: p1.y + t * r.y,
+    };
+  }
+
+  return null; // No intersection within segments
+}
+
+// Helper function: Check if a point is on a line segment
+function isPointOnSegment(point: { x: number, y: number }, p1: { x: number, y: number }, p2: { x: number, y: number }): boolean {
+  const crossProduct = (point.y - p1.y) * (p2.x - p1.x) - (point.x - p1.x) * (p2.y - p1.y);
+  if (Math.abs(crossProduct) > 1e-9) return false; // Use epsilon for floating point comparison. Not collinear
+
+  const dotProduct = (point.x - p1.x) * (p2.x - p1.x) + (point.y - p1.y) * (p2.y - p1.y);
+  if (dotProduct < 0) return false; // Beyond p1
+
+  const squaredLength = (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y);
+  if (dotProduct > squaredLength) return false; // Beyond p2
+
+  return true;
+}
+
+function findAdjustedPoint(
+  centroid: { x: number, y: number },
+  region: Region,
+  vertices: Point[],
+  adjusting: 'vertical' | 'horizontal' = 'horizontal'
+): { x: number, y: number } {
+  const regionVertices = region.vertices
+    .map(vertexId => vertices.find(v => v.id === vertexId))
+    .filter((vertex): vertex is Point => vertex !== undefined);
+
+  const line = adjusting === 'vertical' ? {
+    start: { x: centroid.x, y: -1000 },
+    end: { x: centroid.x, y: 3000 }
+  } : {
+    start: { x: -1000, y: centroid.y },
+    end: { x: 5000, y: centroid.y }
+  }
+
+
+  if (regionVertices.length < 3) {
+    return centroid; // Not a valid polygon, return original centroid
+  }
+  // 1. Find intersection points on the same horizontal line (y = centroid.y)
+  const intersections: { x: number, y: number }[] = [];
+  for (let i = 0; i < regionVertices.length; i++) {
+    const p1 = regionVertices[i];
+    const p2 = regionVertices[(i + 1) % regionVertices.length]; // Wrap around
+
+
+
+
+    //Edge potentially intersects, calculate intersection
+    const intersection = lineSegmentIntersection(
+      p1,
+      p2,
+      line.start,
+      line.end
+    );
+    if (intersection != null) { //Check point exists and on segment
+      intersections.push(intersection);
+    }
+  }
+
+  // 2. Sort intersection points by x-coordinate
+  if (adjusting === 'horizontal') intersections.sort((a, b) => a.x - b.x);
+  else intersections.sort((a, b) => a.y - b.y);
+
+  // 3. Find the longest segment containing the centroid's x-coordinate
+  let longestSegment: { start: { x: number, y: number }; end: { x: number, y: number } } | null = null;
+  let maxLength = 0;
+
+  for (let i = 0; i < intersections.length - 1; i += 2) {
+    const segmentStart = intersections[i];
+    const segmentEnd = intersections[i + 1];
+
+    const length = Math.pow((segmentEnd.x - segmentStart.x), 2) + Math.pow((segmentEnd.y - segmentStart.y), 2);
+    if (length > maxLength) {
+      maxLength = length;
+      longestSegment = { start: segmentStart, end: segmentEnd };
+    }
+  }
+
+
+  // 4.  Adjust position within longest segment, applying margin
+  if (longestSegment) {
+    const adjustedX = (Math.max(longestSegment.start.x, longestSegment.end.x) - Math.min(longestSegment.start.x, longestSegment.end.x)) / 2 + Math.min(longestSegment.start.x, longestSegment.end.x);
+    const adjustedY = (Math.max(longestSegment.start.y, longestSegment.end.y) - Math.min(longestSegment.start.y, longestSegment.end.y)) / 2 + Math.min(longestSegment.start.y, longestSegment.end.y);
+    return { x: adjustedX, y: adjustedY }; // Keep original y
+  }
+
+  // 5. Return original centroid if no suitable segment found.
+  return centroid;
+}
+
+
+function findAdjustedCentroid(
+  region: Region,
+  vertices: Point[],
+  margin: number
+): { x: number, y: number } {
+  const regionVertices = region.vertices
+    .map(vertexId => vertices.find(v => v.id === vertexId))
+    .filter((vertex): vertex is Point => vertex !== undefined);
+
+  if (regionVertices.length === 0) {
+    return { x: 0, y: 0 }; // Or some other default/error value
+  }
+
+  const centroid = getCentroid(region, vertices)
+  if (!isPointInPolygon(centroid.x, centroid.y, vertices)) console.log("!!!")
+
+  let newPoint = centroid;
+  newPoint = findAdjustedPoint(newPoint, region, vertices, 'vertical');
+  newPoint = findAdjustedPoint(newPoint, region, vertices, 'horizontal');
+  return newPoint
+}
+
+
 const getCentroid = (region: Region, vertices: Point[]) => {
   const territoryVertices = region.vertices.map(
     vertexId => vertices.find(v => v.id === vertexId)
@@ -188,6 +336,18 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
+
+
+  const [svgImage, setSvgImage] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      setSvgImage(img);
+    };
+    img.src = 'noun-submarine-1189639.svg'; // REPLACE WITH YOUR SVG FILE PATH
+  }, []);
+
 
   const calculateScale = useCallback(() => {
     const container = containerRef.current;
@@ -278,6 +438,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.fill();
     });
 
+    // DRAW REGION BOUNDARIES
     regions.forEach(region => {
       if (region.vertices.length < 3) return;
       const regionStyle = getRegionStyle(region);
@@ -309,17 +470,30 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       // --- Reset Line Dash (Important!) ---
       ctx.setLineDash([]); // Reset after drawing each region
 
+      const centroid = findAdjustedCentroid(region, vertices, 0);
 
-      const centroid = getCentroid(region, vertices);
-
-      if (showLabels && regionStyle.text) {
+      if (regionStyle.text || showLabels) {
         ctx.fillStyle = 'black';
         ctx.font = regionStyle.font || '18px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(regionStyle.text, centroid.x, centroid.y);
+
+        const text = (regionStyle.text || region.name).split("\n")
+
+        text.forEach((line, index) => ctx.fillText(line, centroid.x, centroid.y - ((text.length - 1) * 18 / 2) + index * 18))
       }
 
+      /*
+      if (territoriesByName[region.name]?.isSea() && svgImage) {
+        ctx.fillStyle = 'black';
+        ctx.font = regionStyle.font || 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const size = 80
+
+        //        ctx.drawImage(svgImage, centroid.x - size / 2, centroid.y - size / 2, size, size);
+        
+    }*/
     });
 
 
@@ -335,6 +509,8 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.stroke();
     });
 
+
+    // DRAW ROUTES
     if (routes && routes.length > 0) { // path is now just string[] | null
       ctx.beginPath();
       ctx.strokeStyle = 'purple'; // Choose a color

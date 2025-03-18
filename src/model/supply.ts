@@ -30,6 +30,9 @@ const canTradeFor = (faction: Faction) => {
       case "Enemy":
         return false;
       case "Open":
+        if (faction.enemies.size === 0) return true // no enemies seas are always open
+        if (target.escapedSub?.enemies.has(faction.name)) return false // there is an escaped sub of that I am an enemy of
+      default:
         return true
     }
   }
