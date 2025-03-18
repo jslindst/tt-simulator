@@ -85,8 +85,7 @@ const MapView: React.FC = () => {
     const resourcesFor = (territory.resourcesForFaction() || myState.factionsByName.Neutral);
 
     const color = resourcesFor.color;
-    const inOwnersSupply = territory.isSea() || !controller || controller.name === "Neutral" || supplyStatusByFaction[controller.name].supplied.includes(region.name)
-
+    const inOwnersSupply = territory.isSea() || !controller || controller.name === "Neutral" || controller.enemies.size === 0 || supplyStatusByFaction[controller.name].supplied.includes(region.name)
 
     const inOwnersTradeTRANS = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].tradeable.includes(region.name)
     const inOwnersTradeMED = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].tradeableMED.includes(region.name)
