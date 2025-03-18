@@ -561,8 +561,13 @@ export class Nation {
 
   addInfluence(faction: Faction) {
     if (!this.capital) return // is sea
-    if (this.capital.isGreatPowerHomeTerritory()) return; // cannot influence great powers
+    if (this.capital.isGreatPowerHomeTerritory() || this.capital.homeTerritoryOf.name !== factionsByName.Neutral.name) return; // cannot influence great powers
     if (faction === factionsByName.Neutral) {
+      if (this.isOccupied()) {
+        const occupier = this.capital.occupier!;
+        this.capital.occupier = undefined;
+        this.influence = [occupier.name, occupier.name, occupier.name]
+      }
       if (this.influence.length > 0) this.influence.shift();
       return;
     }
@@ -601,7 +606,6 @@ export class Nation {
       console.warn(`Tried to occupy nation ${this.name}, but it has no capital.`)
       return; // 
     }
-    this.influence = [];
     this.capital.occupy(faction);
   }
 
