@@ -5,7 +5,7 @@ import { BlockadeLevel, Faction, factionsByName, territoriesByName, Territory } 
 import { findRegionAtPoint } from './MapEditor'; // Make sure you have this export
 import { mapData, neighborLookupNoAfrica, neighborLookupWithAfricaRoute } from 'mapData'; // Ensure this path is correct
 import { FactionDiv } from './FactionDiv';
-import { Box, Button, SxProps, Theme, Typography } from '@mui/material';
+import { Box, Button, SxProps, Theme, Typography, useMediaQuery } from '@mui/material';
 import WarStateControls from './WarState';
 import { findSuppliedTerritoriesFor, findTradableTerritoriesFor } from 'model/supply';
 import chroma from "chroma-js";
@@ -74,6 +74,9 @@ const MapView: React.FC = () => {
   const [myState, setMyState] = useState<TerritoryState>(initialState);
   const [currentFaction, setCurrentFaction] = useState<string>("Axis");
   const [currentMode, setCurrentMode] = useState<"Influence" | "Control">("Influence");
+
+  const isSmallScreen = useMediaQuery('(max-width:600px)');
+  const isMediumScreen = useMediaQuery('(max-width:900px)');
 
   const getRegionColor = useCallback((region: Region): RegionStyle => {
     const territory = myState.territoriesByName[region.name];
@@ -202,7 +205,7 @@ const MapView: React.FC = () => {
 
 
   const selectedStyle: SxProps<Theme> = {
-    backgroundColor: '#B2D7FF', border: 2, color: 'black'
+    backgroundColor: 'rgb(55, 148, 240)', border: 2, color: 'black'
   }
 
   return (
@@ -215,10 +218,10 @@ const MapView: React.FC = () => {
           <WarStateControls faction1="West" faction2="USSR" onWarChange={warStateUpdater} />
 
         </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', flexDirection: isMediumScreen ? 'column' : 'row', maxWidth: '100%', justifyContent: 'center' }}>
           <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center', gap: 2, alignItems: 'center' }}>
-            <Button size='small' sx={{ ...(currentMode === "Influence" ? selectedStyle : {}) }} onClick={() => setCurrentMode('Influence')} variant='contained'>[I]nfluence</Button>
-            <Button size='small' sx={{ ...(currentMode === "Control" ? selectedStyle : {}) }} onClick={() => setCurrentMode('Control')} variant='contained'>[C]ontrol</Button>
+            <Button size='small' sx={{ ...(currentMode === "Influence" ? selectedStyle : {}) }} onClick={() => setCurrentMode('Influence')} variant='outlined'>[I]nfluence</Button>
+            <Button size='small' sx={{ ...(currentMode === "Control" ? selectedStyle : {}) }} onClick={() => setCurrentMode('Control')} variant='outlined'>[C]ontrol</Button>
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center', alignItems: 'center', marginRight: 2, marginLeft: 2 }}>
             {factions.filter(f => f.name !== "Neutral").map((faction, index) => <Box key={index} sx={{ backgroundColor: faction.color }}>
@@ -227,10 +230,10 @@ const MapView: React.FC = () => {
             </Box>)}
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%', justifyContent: 'center', gap: 2, alignItems: 'center' }}>
-            <Button size='small' sx={{ ...(currentFaction === "Axis" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("Axis")} variant='contained'>[A]xis</Button>
-            <Button size='small' sx={{ ...(currentFaction === "West" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("West")} variant='contained'>[W]est</Button>
-            <Button size='small' sx={{ ...(currentFaction === "USSR" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("USSR")} variant='contained'>[U]SSR</Button>
-            <Button size='small' sx={{ ...(currentFaction === "Neutral" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("Neutral")} variant='contained'>[N]eutral</Button>
+            <Button size='small' sx={{ ...(currentFaction === "Axis" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("Axis")} variant='outlined'>[A]xis</Button>
+            <Button size='small' sx={{ ...(currentFaction === "West" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("West")} variant='outlined'>[W]est</Button>
+            <Button size='small' sx={{ ...(currentFaction === "USSR" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("USSR")} variant='outlined'>[U]SSR</Button>
+            <Button size='small' sx={{ ...(currentFaction === "Neutral" ? selectedStyle : {}) }} onClick={() => setCurrentFaction("Neutral")} variant='outlined'>[N]eutral</Button>
           </Box></Box>
         <div style={{ maxWidth: '100%', maxHeight: '100%', overflow: 'auto', border: '1px solid #ccc' }}>
           <MapVisualization

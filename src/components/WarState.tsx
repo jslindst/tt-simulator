@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, FormControlLabel, FormGroup, Switch } from '@mui/material'; // Import MUI components
+import { Box, FormControlLabel, FormGroup, Switch, useMediaQuery } from '@mui/material'; // Import MUI components
 
 
 
@@ -10,6 +10,9 @@ const WarStateControls: React.FC<{ faction1: string, faction2: string, onWarChan
 }) => {
   const [toggleState, setToggleState] = useState<boolean>(false);
 
+  const isSmallScreen = useMediaQuery('(max-width:600px)'); // Adjust breakpoint as needed
+  const isMediumScreen = useMediaQuery('(max-width:900px)');
+
   const handleToggleWar = (
     newValue: boolean
   ) => {
@@ -17,6 +20,9 @@ const WarStateControls: React.FC<{ faction1: string, faction2: string, onWarChan
     const newState = newValue ? "WAR" : "PEACE";
     onWarChange(faction1, faction2, newState);
   };
+
+  const flabel1 = isSmallScreen || isMediumScreen ? faction1.substring(0, 1) : faction1;
+  const flabel2 = isSmallScreen || isMediumScreen ? faction2.substring(0, 1) : faction2;
 
   return (
     <Box >
@@ -29,7 +35,7 @@ const WarStateControls: React.FC<{ faction1: string, faction2: string, onWarChan
               name="axisVsWest"
             />
           }
-          label={`${faction1} & ${faction2} ` + (toggleState ? "War" : "Peace")}
+          label={`${flabel1} & ${flabel2} ` + (toggleState ? "War" : "Peace")}
         />
       </FormGroup>
     </Box>
