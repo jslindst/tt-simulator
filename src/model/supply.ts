@@ -1,6 +1,12 @@
 import { TerritoryState } from "components/MapView";
 import { Faction, findShortestPathsToAll, findTerritoriesInSupply, SupplyPaths, Territory } from "./HistoryTracker";
 
+export type SupplyStatus = {
+  supplied: SupplyPaths
+  tradeable: string[]
+  tradeableMED: string[]
+}
+
 const canSupplyFor = (faction: Faction) => {
   return (target: Territory) => {
     const status = target.isStatusFor(faction)

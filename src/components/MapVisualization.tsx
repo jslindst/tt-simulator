@@ -1,5 +1,6 @@
 import { territoriesByName, Territory } from 'model/HistoryTracker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { findAdjustedCentroid, getOrCreateNonRepeatingPattern } from 'utils/ctx-utils';
 
 
 export interface Point {
@@ -41,239 +42,11 @@ export type RegionStyle = Partial<{
   dashed: number[]
 }>
 
-const patternCache = new Map();
-function getOrCreateNonRepeatingPattern(
-  regionStyle: RegionStyle,
-  imageWidth: number,
-  imageHeight: number,
-  ctx: CanvasRenderingContext2D
-) {
-  if (!regionStyle.pattern || !regionStyle.pattern.colors) return null;
-
-  const { colors, angle = 0 } = regionStyle.pattern;
-  let widths = regionStyle.pattern.widths; // Might be a number or an array
-
-  if (colors.length === 0) return null;
-
-  // --- Handle single width value ---
-  if (typeof widths === 'number') {
-    widths = Array(colors.length).fill(widths); // Create an array filled with the single width
-  } else if (!widths || widths.length === 0) {
-    return null; //or default width, if it is not defined.
-  }
-
-  // Create a unique key for caching.
-  const key = `${colors.join('-')}-${widths.join('-')}-${angle}-${imageWidth}-${imageHeight}`;
-  if (patternCache.has(key)) {
-    return patternCache.get(key);
-  }
-
-  const patternCanvas = document.createElement('canvas');
-  patternCanvas.width = imageWidth;
-  patternCanvas.height = imageHeight;
-  const patternCtx = patternCanvas.getContext('2d');
-  if (!patternCtx) return null;
-
-  patternCtx.rotate((angle * Math.PI) / 180);
-
-  const diagonal = Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight);
-
-  // Calculate the total width of one repetition of the pattern
-  let totalPatternWidth = 0;
-  for (const width of widths) {
-    totalPatternWidth += width;
-  }
-
-  // Calculate the number of stripes needed to cover the diagonal
-  const numStripes = Math.ceil(diagonal / totalPatternWidth);
-
-  let currentX = -numStripes * totalPatternWidth; // Start off-screen to the left
-
-  // Draw the stripes
-  for (let i = -numStripes; i <= numStripes; i++) { // Iterate enough times to cover the diagonal
-    let colorIndex = 0;
-    let widthIndex = 0;
-    let stripeStartX = currentX;
-
-    while (stripeStartX < currentX + totalPatternWidth) {
-      patternCtx.fillStyle = colors[colorIndex % colors.length];
-      const currentWidth = widths[widthIndex % widths.length];
-      patternCtx.fillRect(stripeStartX, -diagonal, currentWidth, diagonal * 3); // Draw extra-long stripes to ensure will fit
-
-      stripeStartX += currentWidth;
-      colorIndex++;
-      widthIndex++;
-    }
-    currentX += totalPatternWidth
-  }
-
-  patternCtx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformations
-
-  const pattern = ctx.createPattern(patternCanvas, 'no-repeat');
-  if (!pattern) return null;
-
-  patternCache.set(key, pattern);
-  return pattern;
-}
-
 export interface MapMouseEvent {
   x: number;
   y: number;
   originalEvent: React.MouseEvent<HTMLCanvasElement>;
 }
-
-// Helper function: Line segment intersection
-// Returns the intersection point if the segments intersect, otherwise null.
-function lineSegmentIntersection(
-  p1: Point,
-  p2: Point,
-  q1: Point,
-  q2: Point
-): Point | null {
-  // Calculate direction vectors
-  const r = { x: p2.x - p1.x, y: p2.y - p1.y };
-  const s = { x: q2.x - q1.x, y: q2.y - q1.y };
-
-  const rCrossS = r.x * s.y - r.y * s.x;
-  const qMinusP = { x: q1.x - p1.x, y: q1.y - p1.y };
-
-  // Parallel lines
-  if (rCrossS === 0) {
-    return null;
-  }
-
-  const t = (qMinusP.x * s.y - qMinusP.y * s.x) / rCrossS;
-  const u = (qMinusP.x * r.y - qMinusP.y * r.x) / rCrossS;
-
-  // Check if intersection point is within both segments
-  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-    return {
-      x: p1.x + t * r.x,
-      y: p1.y + t * r.y,
-    };
-  }
-
-  return null; // No intersection within segments
-}
-
-function findAdjustedPoint(
-  centroid: Point,
-  region: Region,
-  vertices: Vertex[],
-  adjusting: 'vertical' | 'horizontal' = 'horizontal'
-): Point {
-  const regionVertices = region.vertices
-    .map(vertexId => vertices.find(v => v.id === vertexId))
-    .filter((vertex): vertex is Vertex => vertex !== undefined);
-
-  const line = adjusting === 'vertical' ? {
-    start: { x: centroid.x, y: -1000 },
-    end: { x: centroid.x, y: 3000 }
-  } : {
-    start: { x: -1000, y: centroid.y },
-    end: { x: 5000, y: centroid.y }
-  }
-
-  if (regionVertices.length < 3) {
-    return centroid; // Not a valid polygon, return original centroid
-  }
-  // 1. Find intersection points on the same horizontal line (y = centroid.y)
-  const intersections: Point[] = [];
-  for (let i = 0; i < regionVertices.length; i++) {
-    const p1 = regionVertices[i];
-    const p2 = regionVertices[(i + 1) % regionVertices.length]; // Wrap around
-
-
-
-
-    //Edge potentially intersects, calculate intersection
-    const intersection = lineSegmentIntersection(
-      p1,
-      p2,
-      line.start,
-      line.end
-    );
-    if (intersection != null) { //Check point exists and on segment
-      intersections.push(intersection);
-    }
-  }
-
-  // 2. Sort intersection points by x-coordinate
-  if (adjusting === 'horizontal') intersections.sort((a, b) => a.x - b.x);
-  else intersections.sort((a, b) => a.y - b.y);
-
-  // 3. Find the longest segment containing the centroid's x-coordinate
-  let longestSegment: { start: Point; end: Point } | null = null;
-  let maxLength = 0;
-
-  for (let i = 0; i < intersections.length - 1; i += 2) {
-    const segmentStart = intersections[i];
-    const segmentEnd = intersections[i + 1];
-
-    const length = Math.pow((segmentEnd.x - segmentStart.x), 2) + Math.pow((segmentEnd.y - segmentStart.y), 2);
-    if (length > maxLength) {
-      maxLength = length;
-      longestSegment = { start: segmentStart, end: segmentEnd };
-    }
-  }
-
-
-  // 4.  Adjust position within longest segment, applying margin
-  if (longestSegment) {
-    const adjustedX = (Math.max(longestSegment.start.x, longestSegment.end.x) - Math.min(longestSegment.start.x, longestSegment.end.x)) / 2 + Math.min(longestSegment.start.x, longestSegment.end.x);
-    const adjustedY = (Math.max(longestSegment.start.y, longestSegment.end.y) - Math.min(longestSegment.start.y, longestSegment.end.y)) / 2 + Math.min(longestSegment.start.y, longestSegment.end.y);
-    return { x: adjustedX, y: adjustedY }; // Keep original y
-  }
-
-  // 5. Return original centroid if no suitable segment found.
-  return centroid;
-}
-
-
-function findAdjustedCentroid(
-  region: Region,
-  vertices: Vertex[],
-  margin: number
-): Point {
-  const regionVertices = region.vertices
-    .map(vertexId => vertices.find(v => v.id === vertexId))
-    .filter((vertex): vertex is Vertex => vertex !== undefined);
-
-  if (regionVertices.length === 0) {
-    return { x: 0, y: 0 }; // Or some other default/error value
-  }
-
-  const centroid = getCentroid(region, vertices)
-  let newPoint = centroid;
-  newPoint = findAdjustedPoint(newPoint, region, vertices, 'vertical');
-  newPoint = findAdjustedPoint(newPoint, region, vertices, 'horizontal');
-  return newPoint
-}
-
-
-const getCentroid = (region: Region, vertices: Vertex[]) => {
-  const territoryVertices = region.vertices.map(
-    vertexId => vertices.find(v => v.id === vertexId)
-  ).filter((vertex): vertex is Vertex => vertex !== undefined);
-
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
-  for (const point of territoryVertices) {
-    minX = Math.min(minX, point.x);
-    minY = Math.min(minY, point.y);
-    maxX = Math.max(maxX, point.x);
-    maxY = Math.max(maxY, point.y);
-  }
-  return {
-    x: (minX + maxX) / 2,
-    y: (minY + maxY) / 2
-  };
-};
-
-
 
 const defaultImage = {
   naturalWidth: 3400,
@@ -298,6 +71,7 @@ interface MapVisualizationProps {
   width?: number | string;
   height?: number | string;
 }
+
 const MapVisualization: React.FC<MapVisualizationProps> = ({
   imageSrc,
   regions,
@@ -347,6 +121,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Fix scaling
     const dpr = window.devicePixelRatio || 1; // Get device pixel ratio
     canvas.width = image.naturalWidth * scale * dpr;  // Multiply by DPR
     canvas.height = image.naturalHeight * scale * dpr; // Multiply by DPR
@@ -354,10 +129,11 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     canvas.style.height = `${image.naturalHeight * scale}px`; // Set CSS height
     ctx.scale(scale * dpr, scale * dpr); // Scale by DPR *and* your zoom scale
 
-
+    // clear area
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (image !== defaultImage) ctx.drawImage(image as CanvasImageSource, 0, 0);
     if (image === defaultImage) {
+      // default background, shown through the picture for unaccessible areas
       const pattern = getOrCreateNonRepeatingPattern({
         pattern: {
           colors: ['rgb(218, 199, 217)', 'rgb(181, 158, 176)'],
@@ -368,6 +144,8 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.fillStyle = pattern;
       ctx.fillRect(0, 0, image.width, image.height);
     }
+
+    // DRAW PATTERNS & COLOR
     regions.forEach(region => {
       if (region.vertices.length < 3) return;
       const regionStyle = getRegionStyle(region);
@@ -423,7 +201,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       // --- Reset Line Dash (Important!) ---
       ctx.setLineDash([]); // Reset after drawing each region
 
-      const centroid = findAdjustedCentroid(region, vertices, 0);
+      const centroid = findAdjustedCentroid(region, vertices);
 
       if (regionStyle.text || showLabels) {
         ctx.fillStyle = 'black';
@@ -432,26 +210,13 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
         ctx.textBaseline = 'middle';
 
         const text = (regionStyle.text || region.name).split("\n")
-
         text.forEach((line, index) => ctx.fillText(line, centroid.x, centroid.y - ((text.length - 1) * 18 / 2) + index * 18))
       }
-
-      /*
-      if (territoriesByName[region.name]?.isSea() && svgImage) {
-        ctx.fillStyle = 'black';
-        ctx.font = regionStyle.font || 'bold 24px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const size = 80
-
-        //        ctx.drawImage(svgImage, centroid.x - size / 2, centroid.y - size / 2, size, size);
-        
-    }*/
     });
-
 
     customRenderFunctions.forEach(renderFn => renderFn(ctx));
 
+    // DRAW VERTICES
     if (getVertexStyle) vertices.forEach(vertex => {
       const style = getVertexStyle(vertex);
       ctx.beginPath();
@@ -462,14 +227,11 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.stroke();
     });
 
-
     // DRAW ROUTES
     if (routes && routes.length > 0) { // path is now just string[] | null
       ctx.beginPath();
       ctx.strokeStyle = 'purple'; // Choose a color
       ctx.lineWidth = 3;
-
-      // --- Helper function to get centroid (same as before) ---
 
       // --- Draw the path segments ---
       for (let i = 0; i < routes.length - 1; i++) {
@@ -477,8 +239,8 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
         const territory2 = routes[i + 1];
 
         if (!territory1 || !territory2) continue;
-        const centroid1 = getCentroid(territory1, vertices);
-        const centroid2 = getCentroid(territory2, vertices);
+        const centroid1 = findAdjustedCentroid(territory1, vertices);
+        const centroid2 = findAdjustedCentroid(territory2, vertices);
 
         if (centroid1 && centroid2) {
           ctx.moveTo(centroid1.x, centroid1.y);
@@ -488,6 +250,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.stroke(); // Stroke the *entire* path
     }
 
+    // DRAW ICONS
     regions.forEach(region => {
       if (territoriesByName[region.name]?.CityType === 'MainCapital' || territoriesByName[region.name]?.CityType === 'SubCapital') {
         const location = vertices.find(v => v.id === region.name);
@@ -496,50 +259,33 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
         }
       }
     })
-
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
   }, [regions, vertices, getRegionStyle, getVertexStyle, showLabels, customRenderFunctions, scale]);
 
   useEffect(() => { draw(); }, [draw]);
 
-
-  // --- Transform Mouse Events ---
   const transformMouseEvent = (event: React.MouseEvent<HTMLCanvasElement>): MapMouseEvent => {
     const canvas = canvasRef.current;
-    if (!canvas) {
-      return { x: 0, y: 0, originalEvent: event };
-    }
-
+    if (!canvas) return { x: 0, y: 0, originalEvent: event };
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-
     // Calculate x and y relative to canvas, scaled to original image size, NO DPR.
     const x = (event.clientX - rect.left) / scale;
     const y = (event.clientY - rect.top) / scale;
-
     return { x, y, originalEvent: event };
   };
 
-
   // --- Event Handlers (using transformed events) ---
-
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (onClick) {
-      onClick(transformMouseEvent(event));
-    }
+    if (onClick) { onClick(transformMouseEvent(event)); }
   };
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (onMouseMove) {
-      onMouseMove(transformMouseEvent(event));
-    }
+    if (onMouseMove) { onMouseMove(transformMouseEvent(event)); }
   };
 
   const handleCanvasMouseUp = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (onMouseUp) {
-      onMouseUp(transformMouseEvent(event));
-    }
+    if (onMouseUp) { onMouseUp(transformMouseEvent(event)); }
   };
 
   return (
@@ -565,12 +311,11 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   );
 };
 
-
 interface CapitalProps {
   territory: Territory;
-  x: number; // X-coordinate of the center
-  y: number; // Y-coordinate of the center
-  scale?: number; // Optional: Scale factor
+  x: number;
+  y: number;
+  scale?: number;
 }
 
 const drawCapital = (ctx: CanvasRenderingContext2D, props: CapitalProps) => {
@@ -630,5 +375,5 @@ const drawCapital = (ctx: CanvasRenderingContext2D, props: CapitalProps) => {
   ctx.restore(); // Restore the context to its original state
 };
 
-
 export default MapVisualization;
+

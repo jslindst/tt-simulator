@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react'; // Import useCallback
 import MapVisualization, { MapMouseEvent, Region, RegionStyle } from './MapVisualization';
 import { SiteAppBar } from '../pages/SiteAppBar';
-import { BlockadeLevel, Faction, factionsByName, SupplyPaths, territoriesByName, Territory } from '../model/HistoryTracker';
+import { BlockadeLevel, Faction, factionsByName, territoriesByName, Territory } from '../model/HistoryTracker';
 import { findRegionAtPoint } from './MapEditor'; // Make sure you have this export
 import { mapData, neighborLookupNoAfrica, neighborLookupWithAfricaRoute, regionLookup } from 'mapData'; // Ensure this path is correct
 import { FactionDiv } from './FactionDiv';
-import { Box, Button, SxProps, Theme, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, SxProps, Theme, useMediaQuery } from '@mui/material';
 import WarStateControls from './WarState';
-import { findSuppliedTerritoriesFor, findTradableTerritoriesFor } from 'model/supply';
+import { findSuppliedTerritoriesFor, findTradableTerritoriesFor, SupplyStatus } from 'model/supply';
 import chroma from "chroma-js";
 
 export type TerritoryState = {
@@ -18,12 +18,6 @@ export type TerritoryState = {
 const initialState: TerritoryState = {
   territoriesByName: territoriesByName,
   factionsByName: factionsByName,
-}
-
-export type SupplyStatus = {
-  supplied: SupplyPaths
-  tradeable: string[]
-  tradeableMED: string[]
 }
 
 const MED_BLOCKED: Partial<RegionStyle> = {
@@ -64,8 +58,8 @@ function getRegionStyle(color: string, inOwnersSupply: boolean, blockade: number
   }
 
   return {
-    ...style,  // Merge with any other default styles
-    fillColor: color, // Assuming 'color' is defined elsewhere
+    ...style,
+    fillColor: color // finally add the color to be used
   };
 }
 
@@ -76,7 +70,6 @@ const MapView: React.FC = () => {
   const [currentMode, setCurrentMode] = useState<"Influence" | "Control" | "Show">("Influence");
   const [route, setRoute] = useState<Region[]>([]);
 
-  const isSmallScreen = useMediaQuery('(max-width:600px)');
   const isMediumScreen = useMediaQuery('(max-width:900px)');
 
   const getRegionColor = useCallback((region: Region): RegionStyle => {
@@ -95,6 +88,8 @@ const MapView: React.FC = () => {
     const blockade = inOwnersTradeMED ? BlockadeLevel.NONE : inOwnersTradeTRANS ? BlockadeLevel.MED : BlockadeLevel.FULL;
 
     let style: RegionStyle = getRegionStyle(color, inOwnersSupply, blockade);
+
+    // SHADE SEA + SHOW SUB
     if (territory.isSea() && territory.isOccupied()) {
       return {
         ...style,
@@ -103,6 +98,8 @@ const MapView: React.FC = () => {
         fillColor: chroma.mix(territory.occupier!.color, territory.homeTerritoryOf.color).hex()
       };
     }
+
+    // SHOW INFLUENCED
     if (!territory.isOccupied()) {
       const nation = territory.nation
       if (nation.isInfluenced()) {
@@ -141,6 +138,7 @@ const MapView: React.FC = () => {
       console.warn(`Territory not found: ${regionClicked.name}`);
       return;
     }
+
     const faction = factionsByName[currentFaction]
 
     if (currentMode === 'Control') {
@@ -194,8 +192,6 @@ const MapView: React.FC = () => {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-
-    // Cleanup the event listener when the component unmounts
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
@@ -215,7 +211,6 @@ const MapView: React.FC = () => {
   }
 
   const factions = Object.keys(myState.factionsByName).map(name => myState.factionsByName[name]);
-
 
   const selectedStyle: SxProps<Theme> = {
     backgroundColor: 'rgb(55, 148, 240)', border: 2, color: 'black'

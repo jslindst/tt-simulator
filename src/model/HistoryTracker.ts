@@ -1,6 +1,6 @@
-import { SupplyStatus } from "components/MapView";
 import { groupByReduceFunction } from "../utils/utils";
 import { Nations, NationType } from "./battle";
+import { SupplyStatus } from "./supply";
 
 export const BlockadeLevel = {
   NONE: 0,

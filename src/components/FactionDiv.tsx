@@ -1,8 +1,8 @@
 import React from "react";
 import { Faction } from "../model/HistoryTracker";
 import { Population, Resource } from "./TrackerIcons";
-import { SupplyStatus } from "./MapView";
 import { useMediaQuery } from "@mui/material";
+import { SupplyStatus } from "model/supply";
 
 interface FactionDivProps {
   faction: Faction;
