@@ -13,7 +13,7 @@ type VisualIdentity = {
   color: string
 }
 
-const INFLUENCE_NEEDED = 2;
+const INFLUENCE_NEEDED = 3;
 
 export const countryVisualIdentity: { [key: string]: VisualIdentity } = {
   "Canada": { name: "CA", color: 'rgb(29,176,223)' },
@@ -544,6 +544,10 @@ export class Nation {
     return this.influence.length > 0
   }
 
+  influenceCount() {
+    return (this.influence.length);
+  }
+
   influencor(): string | null {
     if (this.influence.length === 0) return null
     return this.influence[0];
@@ -557,6 +561,11 @@ export class Nation {
 
   addInfluence(faction: Faction) {
     if (!this.capital) return // is sea
+    if (this.capital.isGreatPowerHomeTerritory()) return; // cannot influence great powers
+    if (faction === factionsByName.Neutral) {
+      if (this.influence.length > 0) this.influence.shift();
+      return;
+    }
     if (this.isOccupied()) {
       console.warn(`Cannot influence ${this.name} as it is occupied by ${this.resourcesForFaction().name}.`);
       return;
@@ -575,6 +584,7 @@ export class Nation {
 
   canBeInfluenced() {
     if (!this.capital) return false;
+    if (this.capital.isGreatPowerHomeTerritory()) return false;
     return !this.capital.isOccupied() && this.influence.length < INFLUENCE_NEEDED;
   }
 
@@ -586,6 +596,7 @@ export class Nation {
   }
 
   occupy(faction: Faction) {
+    console.log("Occupying", this.name, faction)
     if (!this.capital) {
       console.warn(`Tried to occupy nation ${this.name}, but it has no capital.`)
       return; // 

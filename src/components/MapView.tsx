@@ -98,21 +98,20 @@ const MapView: React.FC = () => {
       };
     }
     if (!territory.isOccupied()) {
-      if (territory.nation.isInfluenced()) {
-        const faction = factionsByName[territory.nation.influencor()!]
+      const nation = territory.nation
+      if (nation.isInfluenced()) {
+        const faction = factionsByName[nation.influencor()!]
         return {
           ...style,
           pattern: {
             colors: [faction.color, territory.homeTerritoryOf.color],
-            widths: 34
+            widths: [nation.influenceCount() * 34, 34 * (3 - nation.influenceCount())]
           },
         }
       }
     }
     return style;
   }, [myState]);
-
-
 
   const supplyStatusByFaction: { [key: string]: SupplyStatus } = {}
 
