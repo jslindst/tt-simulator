@@ -336,18 +336,8 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
 
-  const [svgImage, setSvgImage] = useState<HTMLImageElement | null>(null);
-
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => {
-      setSvgImage(img);
-    };
-    img.src = 'noun-submarine-1189639.svg'; // REPLACE WITH YOUR SVG FILE PATH
-  }, []);
-
-
   const calculateScale = useCallback(() => {
+    console.log("Recalculating Scale");
     const container = containerRef.current;
     const image = imageSrc ? imageRef.current : defaultImage;
 
@@ -355,27 +345,8 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       const containerWidth = container.clientWidth;
       const intrinsicScale = containerWidth / image.naturalWidth;
       setScale(intrinsicScale);
-
-      const dpr = window.devicePixelRatio || 1;
-      const canvasWidth = image.naturalWidth * intrinsicScale;
-      const canvasHeight = image.naturalHeight * intrinsicScale;
-
-      if (canvasRef.current) {
-        canvasRef.current.width = canvasWidth * dpr;
-        canvasRef.current.height = canvasHeight * dpr;
-        canvasRef.current.style.width = `${canvasWidth}px`;
-        canvasRef.current.style.height = `${canvasHeight}px`;
-
-        const ctx = canvasRef.current.getContext('2d'); // Moved inside the if
-        if (ctx) {
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          // NO SCALING HERE: ctx.scale(intrinsicScale * dpr, intrinsicScale * dpr);
-        }
-
-      }
     }
   }, [imageSrc]);
-
 
   useEffect(() => {
     calculateScale();
