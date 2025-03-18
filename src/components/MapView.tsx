@@ -39,10 +39,9 @@ const BLOCKED: Partial<RegionStyle> = {
 
 const UNSUPPLIED: Partial<RegionStyle> = {
   pattern: {
-    color1: 'black',
-    color2: 'red',
+    colors: ['black'],
     angle: 45,
-    width: 20,
+    widths: 20,
   }
 }
 
@@ -56,7 +55,7 @@ function getRegionStyle(color: string, inOwnersSupply: boolean, blockade: number
 
   if (!inOwnersSupply) {
     style = { ...style, ...UNSUPPLIED }
-    style.pattern!.color2 = color;
+    style.pattern!.colors[1] = color;
   }
   if (blockade === BlockadeLevel.FULL) {
     style = { ...style, ...BLOCKED }
@@ -104,8 +103,8 @@ const MapView: React.FC = () => {
         return {
           ...style,
           pattern: {
-            color1: faction.color,
-            color2: territory.homeTerritoryOf.color
+            colors: [faction.color, territory.homeTerritoryOf.color],
+            widths: 34
           },
         }
       }

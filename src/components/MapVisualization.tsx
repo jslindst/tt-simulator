@@ -29,10 +29,9 @@ export type RegionStyle = Partial<{
   drawColor: string;
   drawWidth: number;
   pattern: {
-    color1: string,
-    color2: string,
+    colors: string[],
+    widths: number[] | number,
     angle?: number,
-    width?: number,
   }
   font: string,
   text: string,
@@ -43,20 +42,29 @@ const patternCache = new Map();
 
 function getOrCreateNonRepeatingPattern(
   regionStyle: RegionStyle,
-  patternWidth: number,
   imageWidth: number,
   imageHeight: number,
-  ctx: CanvasRenderingContext2D // Add ctx back as a parameter
+  ctx: CanvasRenderingContext2D
 ) {
-  if (!regionStyle.pattern) return null;
+  if (!regionStyle.pattern || !regionStyle.pattern.colors) return null;
 
-  const key = `${regionStyle.pattern.color1}-${regionStyle.pattern.color2}-${regionStyle.pattern.angle}-${imageWidth}-${imageHeight}`;
+  const { colors, angle = 0 } = regionStyle.pattern;
+  let widths = regionStyle.pattern.widths; // Might be a number or an array
 
+  if (colors.length === 0) return null;
+
+  // --- Handle single width value ---
+  if (typeof widths === 'number') {
+    widths = Array(colors.length).fill(widths); // Create an array filled with the single width
+  } else if (!widths || widths.length === 0) {
+    return null; //or default width, if it is not defined.
+  }
+
+  // Create a unique key for caching.
+  const key = `${colors.join('-')}-${widths.join('-')}-${angle}-${imageWidth}-${imageHeight}`;
   if (patternCache.has(key)) {
     return patternCache.get(key);
   }
-
-  const angle = regionStyle.pattern.angle || 0;
 
   const patternCanvas = document.createElement('canvas');
   patternCanvas.width = imageWidth;
@@ -64,31 +72,42 @@ function getOrCreateNonRepeatingPattern(
   const patternCtx = patternCanvas.getContext('2d');
   if (!patternCtx) return null;
 
-  // 1. Rotate the context *before* drawing
-  //  patternCtx.translate(imageWidth / 2, imageHeight / 2);
   patternCtx.rotate((angle * Math.PI) / 180);
-  //  patternCtx.translate(-imageWidth / 2, -imageHeight / 2);
 
-  // 2. Calculate stripe positions
-  const stripeWidth = patternWidth;
   const diagonal = Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight);
-  const numStripes = Math.ceil(diagonal / stripeWidth);
 
-  for (let i = -numStripes; i <= numStripes; i++) {
-    patternCtx.fillStyle = i % 2 === 0 ? regionStyle.pattern.color1 : regionStyle.pattern.color2;
-    patternCtx.fillRect(
-      i * stripeWidth,
-      -diagonal,
-      stripeWidth,
-      diagonal * 3
-    );
+  // Calculate the total width of one repetition of the pattern
+  let totalPatternWidth = 0;
+  for (const width of widths) {
+    totalPatternWidth += width;
   }
 
-  // 3. Reset transformations
-  patternCtx.setTransform(1, 0, 0, 1, 0, 0);
+  // Calculate the number of stripes needed to cover the diagonal
+  const numStripes = Math.ceil(diagonal / totalPatternWidth);
 
-  // 4. Create the pattern (this is the key change)
-  const pattern = ctx.createPattern(patternCanvas, 'no-repeat'); // Use 'no-repeat'
+  let currentX = -numStripes * totalPatternWidth; // Start off-screen to the left
+
+  // Draw the stripes
+  for (let i = -numStripes; i <= numStripes; i++) { // Iterate enough times to cover the diagonal
+    let colorIndex = 0;
+    let widthIndex = 0;
+    let stripeStartX = currentX;
+
+    while (stripeStartX < currentX + totalPatternWidth) {
+      patternCtx.fillStyle = colors[colorIndex % colors.length];
+      const currentWidth = widths[widthIndex % widths.length];
+      patternCtx.fillRect(stripeStartX, -diagonal, currentWidth, diagonal * 3); // Draw extra-long stripes
+
+      stripeStartX += currentWidth;
+      colorIndex++;
+      widthIndex++;
+    }
+    currentX += totalPatternWidth
+  }
+
+  patternCtx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformations
+
+  const pattern = ctx.createPattern(patternCanvas, 'no-repeat');
   if (!pattern) return null;
 
   patternCache.set(key, pattern);
@@ -185,11 +204,11 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     if (image === defaultImage) {
       const pattern = getOrCreateNonRepeatingPattern({
         pattern: {
-          color1: 'rgb(218, 199, 217)',
-          color2: 'rgb(181, 158, 176)',
-          angle: 45
+          colors: ['rgb(218, 199, 217)', 'rgb(181, 158, 176)'],
+          angle: 45,
+          widths: [10, 10]
         }
-      }, 10, image.width, image.height, ctx);
+      }, image.width, image.height, ctx);
       ctx.fillStyle = pattern;
       ctx.fillRect(0, 0, image.width, image.height);
     }
@@ -209,7 +228,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       }
       ctx.closePath();
       if (regionStyle.pattern) {
-        ctx.fillStyle = getOrCreateNonRepeatingPattern(regionStyle, regionStyle.pattern.width || 30, image.width, image.height, ctx);
+        ctx.fillStyle = getOrCreateNonRepeatingPattern(regionStyle, image.width, image.height, ctx);
       } else {
         ctx.fillStyle = regionStyle.fillColor || 'white';
       }
