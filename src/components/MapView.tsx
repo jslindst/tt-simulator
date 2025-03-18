@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react'; // Import useCallback
 import MapVisualization, { MapMouseEvent, Region, RegionStyle } from './MapVisualization';
 import { SiteAppBar } from '../pages/SiteAppBar';
-import { BlockadeLevel, Faction, factionsByName, territoriesByName, Territory } from '../model/HistoryTracker';
+import { BlockadeLevel, Faction, factionsByName, SupplyPaths, territoriesByName, Territory } from '../model/HistoryTracker';
 import { findRegionAtPoint } from './MapEditor'; // Make sure you have this export
-import { mapData, neighborLookupNoAfrica, neighborLookupWithAfricaRoute } from 'mapData'; // Ensure this path is correct
+import { mapData, neighborLookupNoAfrica, neighborLookupWithAfricaRoute, regionLookup } from 'mapData'; // Ensure this path is correct
 import { FactionDiv } from './FactionDiv';
 import { Box, Button, SxProps, Theme, Typography, useMediaQuery } from '@mui/material';
 import WarStateControls from './WarState';
@@ -21,7 +21,7 @@ const initialState: TerritoryState = {
 }
 
 export type SupplyStatus = {
-  supplied: string[]
+  supplied: SupplyPaths
   tradeable: string[]
   tradeableMED: string[]
 }
@@ -73,7 +73,8 @@ function getRegionStyle(color: string, inOwnersSupply: boolean, blockade: number
 const MapView: React.FC = () => {
   const [myState, setMyState] = useState<TerritoryState>(initialState);
   const [currentFaction, setCurrentFaction] = useState<string>("Axis");
-  const [currentMode, setCurrentMode] = useState<"Influence" | "Control">("Influence");
+  const [currentMode, setCurrentMode] = useState<"Influence" | "Control" | "Show">("Influence");
+  const [route, setRoute] = useState<Region[]>([]);
 
   const isSmallScreen = useMediaQuery('(max-width:600px)');
   const isMediumScreen = useMediaQuery('(max-width:900px)');
@@ -85,7 +86,8 @@ const MapView: React.FC = () => {
     const resourcesFor = (territory.resourcesForFaction() || myState.factionsByName.Neutral);
 
     const color = resourcesFor.color;
-    const inOwnersSupply = territory.isSea() || !controller || controller.name === "Neutral" || controller.enemies.size === 0 || supplyStatusByFaction[controller.name].supplied.includes(region.name)
+    const inOwnersSupply = territory.isSea() || !controller || controller.name === "Neutral" || controller.enemies.size === 0 ||
+      supplyStatusByFaction[controller.name].supplied[region.name] !== null
 
     const inOwnersTradeTRANS = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].tradeable.includes(region.name)
     const inOwnersTradeMED = territory.isSea() || resourcesFor.name === "Neutral" || supplyStatusByFaction[resourcesFor.name].tradeableMED.includes(region.name)
@@ -143,6 +145,14 @@ const MapView: React.FC = () => {
       territory.occupy(faction);
     } else if (currentMode === 'Influence') {
       territory.nation.addInfluence(faction)
+    } else if (currentMode === 'Show') {
+      const where = territory.resourcesForFaction()
+      const routeTo = supplyStatusByFaction[where.name].supplied[regionClicked.name];
+      if (routeTo) {
+        setRoute(routeTo.map(t => regionLookup[t]))
+      } else {
+        setRoute([])
+      }
     }
 
     setMyState((oldState) => {
@@ -176,6 +186,8 @@ const MapView: React.FC = () => {
         case 'c':
           setCurrentMode('Control');
           break;
+        case 's':
+          setCurrentMode('Show');
       }
     };
 
@@ -238,6 +250,7 @@ const MapView: React.FC = () => {
           <MapVisualization
             regions={mapData.regions}
             vertices={mapData.vertices}
+            routes={route}
             getRegionStyle={getRegionColor}
             onMouseUp={handleCanvasClick}
             showLabels={true}

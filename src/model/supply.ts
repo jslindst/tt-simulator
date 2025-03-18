@@ -1,5 +1,5 @@
 import { TerritoryState } from "components/MapView";
-import { Faction, findTerritoriesInSupply, Territory } from "./HistoryTracker";
+import { Faction, findShortestPathsToAll, findTerritoriesInSupply, SupplyPaths, Territory } from "./HistoryTracker";
 
 const canSupplyFor = (faction: Faction) => {
   return (target: Territory) => {
@@ -42,9 +42,9 @@ const supplyRuleFor = (faction: Faction) => {
   }
 }
 
-export function findSuppliedTerritoriesFor(faction: Faction, myState: TerritoryState, lookup: Record<string, string[]>): string[] {
+export function findSuppliedTerritoriesFor(faction: Faction, myState: TerritoryState, lookup: Record<string, string[]>): SupplyPaths {
   const supplyRule = supplyRuleFor(faction)
-  return findTerritoriesInSupply([faction.nationType.mainCapitalName, ...faction.nationType.subCapitalNames], myState.territoriesByName, lookup, supplyRule);
+  return findShortestPathsToAll([faction.nationType.mainCapitalName, ...faction.nationType.subCapitalNames], myState.territoriesByName, lookup, supplyRule);
 }
 
 export function findTradableTerritoriesFor(faction: Faction, myState: TerritoryState, lookup: Record<string, string[]>): string[] {

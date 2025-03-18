@@ -121,6 +121,29 @@ export interface MapMouseEvent {
   originalEvent: React.MouseEvent<HTMLCanvasElement>; // Keep a reference to original
 }
 
+const getCentroid = (region: Region, vertices: Point[]) => {
+  const territoryVertices = region.vertices.map(
+    vertexId => vertices.find(v => v.id === vertexId)
+  ).filter((vertex): vertex is Point => vertex !== undefined);
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const point of territoryVertices) {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
+  return {
+    x: (minX + maxX) / 2,
+    y: (minY + maxY) / 2
+  };
+};
+
+
 
 const defaultImage = {
   naturalWidth: 3400,
@@ -133,6 +156,7 @@ interface MapVisualizationProps {
   imageSrc?: string;
   regions: Region[];
   vertices: Point[];
+  routes?: Region[];
   getRegionStyle?: (region: Region) => RegionStyle;
   getVertexStyle?: (vertex: Point) => VertexStyle;
   showLabels?: boolean;
@@ -148,6 +172,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
   imageSrc,
   regions,
   vertices,
+  routes = [],
   getRegionStyle = (region: Region): RegionStyle => { return { fillColor: 'rgba(0, 128, 255, 0.5)', drawColor: 'green', drawWidth: 2 } },
   getVertexStyle,
   showLabels = true,
@@ -285,27 +310,14 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.setLineDash([]); // Reset after drawing each region
 
 
-      let minX = Infinity;
-      let minY = Infinity;
-      let maxX = -Infinity;
-      let maxY = -Infinity;
-
-      for (const point of points) {
-        minX = Math.min(minX, point.x);
-        minY = Math.min(minY, point.y);
-        maxX = Math.max(maxX, point.x);
-        maxY = Math.max(maxY, point.y);
-      }
-
-      const centerX = (minX + maxX) / 2;
-      const centerY = (minY + maxY) / 2;
+      const centroid = getCentroid(region, vertices);
 
       if (showLabels && regionStyle.text) {
         ctx.fillStyle = 'black';
         ctx.font = regionStyle.font || '18px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(regionStyle.text, centerX, centerY);
+        ctx.fillText(regionStyle.text, centroid.x, centroid.y);
       }
 
     });
@@ -322,6 +334,30 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       ctx.strokeStyle = style.drawColor;
       ctx.stroke();
     });
+
+    if (routes && routes.length > 0) { // path is now just string[] | null
+      ctx.beginPath();
+      ctx.strokeStyle = 'purple'; // Choose a color
+      ctx.lineWidth = 3;
+
+      // --- Helper function to get centroid (same as before) ---
+
+      // --- Draw the path segments ---
+      for (let i = 0; i < routes.length - 1; i++) {
+        const territory1 = routes[i];
+        const territory2 = routes[i + 1];
+
+        if (!territory1 || !territory2) continue;
+        const centroid1 = getCentroid(territory1, vertices);
+        const centroid2 = getCentroid(territory2, vertices);
+
+        if (centroid1 && centroid2) {
+          ctx.moveTo(centroid1.x, centroid1.y);
+          ctx.lineTo(centroid2.x, centroid2.y);
+        }
+      }
+      ctx.stroke(); // Stroke the *entire* path
+    }
 
     regions.forEach(region => {
       if (territoriesByName[region.name]?.CityType === 'MainCapital' || territoriesByName[region.name]?.CityType === 'SubCapital') {

@@ -1,4 +1,4 @@
-import { MapData } from "./components/MapVisualization";
+import { MapData, Region } from "./components/MapVisualization";
 
 import * as loadedMapData from './mapData.json';
 
@@ -45,6 +45,10 @@ function findNeighboringRegions(mapData: MapData): Record<string, string[]> {
 }
 
 export const mapData = loadedMapData
+export const regionLookup: { [key: string]: Region } = {}
+mapData.regions.forEach(i => {
+  regionLookup[i.name] = i
+});
 
 export const neighborLookupNoAfrica = findNeighboringRegions(loadedMapData);
 export const neighborLookupWithAfricaRoute = findNeighboringRegions(loadedMapData);

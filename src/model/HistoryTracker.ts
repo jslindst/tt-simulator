@@ -632,6 +632,65 @@ Object.keys(areasByNation).forEach(areaName => {
 }
 );
 
+export interface SupplyPaths {
+  [territoryName: string]: string[] | null; // Territory name -> Path (array of territory names) or null if unreachable
+}
+
+export function findShortestPathsToAll(
+  startTerritoryNames: string[],
+  territoriesByName: Record<string, Territory>,
+  neighborLookup: Record<string, string[]>,
+  rule: (to: Territory, from: Territory, fromTerritoryName: string | null) => boolean,
+): SupplyPaths {
+
+  const paths: SupplyPaths = {};
+  const queue: [string, string | null][] = startTerritoryNames.map(name => [name, null]); // [territoryName, previousTerritoryName]
+
+  // Initialize paths for all territories to null (unreachable)
+  for (const territoryName in territoriesByName) {
+    paths[territoryName] = null;
+  }
+  // Initialize starting territories with an empty path (reachable from themselves)
+  for (const startName of startTerritoryNames) {
+    paths[startName] = [startName];
+  }
+
+
+  while (queue.length > 0) {
+    const [currentTerritoryName, fromTerritoryName] = queue.shift()!;
+    const currentTerritory = territoriesByName[currentTerritoryName];
+    if (!currentTerritory) continue; // Should never happen, but good practice
+
+    const neighbors = neighborLookup[currentTerritoryName] || [];
+
+    for (const neighborName of neighbors) {
+      const neighbor = territoriesByName[neighborName];
+      if (!neighbor) continue;
+
+      // If the neighbor is already reachable, we don't need to do anything
+      if (paths[neighborName] !== null) continue;
+
+
+      // --- RULE CHECK ---
+      if (fromTerritoryName && !rule(neighbor, currentTerritory, fromTerritoryName)) continue; // Use fromTerritoryName
+      if (!fromTerritoryName && !rule(neighbor, currentTerritory, currentTerritoryName)) continue;
+
+
+      // --- PATH CONSTRUCTION ---
+      // Construct the new path by extending the current path
+      const currentPath = paths[currentTerritoryName];
+      if (!currentPath) continue; //Should never happen.
+      const newPath = [...currentPath, neighborName]; // Create a *new* path
+      paths[neighborName] = newPath;  // Store the path to the neighbor
+
+      queue.push([neighborName, currentTerritoryName]);
+    }
+  }
+
+  return paths;
+}
+
+
 export function findTerritoriesInSupply(
   startTerritoryNames: string[],
   territoriesByName: Record<string, Territory>,
