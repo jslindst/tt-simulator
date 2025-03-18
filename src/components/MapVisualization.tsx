@@ -1,11 +1,13 @@
-import { Box } from '@mui/material';
 import { territoriesByName, Territory } from 'model/HistoryTracker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { isPointInPolygon } from './MapEditor';
+
 
 export interface Point {
   x: number;
   y: number;
+}
+
+export interface Vertex extends Point {
   id: string;
 }
 
@@ -17,7 +19,7 @@ export interface Region {
 
 export interface MapData {
   regions: Region[];
-  vertices: Point[];
+  vertices: Vertex[];
 }
 
 export type VertexStyle = {
@@ -40,7 +42,6 @@ export type RegionStyle = Partial<{
 }>
 
 const patternCache = new Map();
-
 function getOrCreateNonRepeatingPattern(
   regionStyle: RegionStyle,
   imageWidth: number,
@@ -97,7 +98,7 @@ function getOrCreateNonRepeatingPattern(
     while (stripeStartX < currentX + totalPatternWidth) {
       patternCtx.fillStyle = colors[colorIndex % colors.length];
       const currentWidth = widths[widthIndex % widths.length];
-      patternCtx.fillRect(stripeStartX, -diagonal, currentWidth, diagonal * 3); // Draw extra-long stripes
+      patternCtx.fillRect(stripeStartX, -diagonal, currentWidth, diagonal * 3); // Draw extra-long stripes to ensure will fit
 
       stripeStartX += currentWidth;
       colorIndex++;
@@ -115,22 +116,20 @@ function getOrCreateNonRepeatingPattern(
   return pattern;
 }
 
-// --- NEW: Custom Event Interfaces ---
 export interface MapMouseEvent {
   x: number;
   y: number;
-  originalEvent: React.MouseEvent<HTMLCanvasElement>; // Keep a reference to original
+  originalEvent: React.MouseEvent<HTMLCanvasElement>;
 }
-
 
 // Helper function: Line segment intersection
 // Returns the intersection point if the segments intersect, otherwise null.
 function lineSegmentIntersection(
-  p1: { x: number, y: number },
-  p2: { x: number, y: number },
-  q1: { x: number, y: number },
-  q2: { x: number, y: number }
-): { x: number, y: number } | null {
+  p1: Point,
+  p2: Point,
+  q1: Point,
+  q2: Point
+): Point | null {
   // Calculate direction vectors
   const r = { x: p2.x - p1.x, y: p2.y - p1.y };
   const s = { x: q2.x - q1.x, y: q2.y - q1.y };
@@ -157,29 +156,15 @@ function lineSegmentIntersection(
   return null; // No intersection within segments
 }
 
-// Helper function: Check if a point is on a line segment
-function isPointOnSegment(point: { x: number, y: number }, p1: { x: number, y: number }, p2: { x: number, y: number }): boolean {
-  const crossProduct = (point.y - p1.y) * (p2.x - p1.x) - (point.x - p1.x) * (p2.y - p1.y);
-  if (Math.abs(crossProduct) > 1e-9) return false; // Use epsilon for floating point comparison. Not collinear
-
-  const dotProduct = (point.x - p1.x) * (p2.x - p1.x) + (point.y - p1.y) * (p2.y - p1.y);
-  if (dotProduct < 0) return false; // Beyond p1
-
-  const squaredLength = (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y);
-  if (dotProduct > squaredLength) return false; // Beyond p2
-
-  return true;
-}
-
 function findAdjustedPoint(
-  centroid: { x: number, y: number },
+  centroid: Point,
   region: Region,
-  vertices: Point[],
+  vertices: Vertex[],
   adjusting: 'vertical' | 'horizontal' = 'horizontal'
-): { x: number, y: number } {
+): Point {
   const regionVertices = region.vertices
     .map(vertexId => vertices.find(v => v.id === vertexId))
-    .filter((vertex): vertex is Point => vertex !== undefined);
+    .filter((vertex): vertex is Vertex => vertex !== undefined);
 
   const line = adjusting === 'vertical' ? {
     start: { x: centroid.x, y: -1000 },
@@ -189,12 +174,11 @@ function findAdjustedPoint(
     end: { x: 5000, y: centroid.y }
   }
 
-
   if (regionVertices.length < 3) {
     return centroid; // Not a valid polygon, return original centroid
   }
   // 1. Find intersection points on the same horizontal line (y = centroid.y)
-  const intersections: { x: number, y: number }[] = [];
+  const intersections: Point[] = [];
   for (let i = 0; i < regionVertices.length; i++) {
     const p1 = regionVertices[i];
     const p2 = regionVertices[(i + 1) % regionVertices.length]; // Wrap around
@@ -219,7 +203,7 @@ function findAdjustedPoint(
   else intersections.sort((a, b) => a.y - b.y);
 
   // 3. Find the longest segment containing the centroid's x-coordinate
-  let longestSegment: { start: { x: number, y: number }; end: { x: number, y: number } } | null = null;
+  let longestSegment: { start: Point; end: Point } | null = null;
   let maxLength = 0;
 
   for (let i = 0; i < intersections.length - 1; i += 2) {
@@ -248,12 +232,12 @@ function findAdjustedPoint(
 
 function findAdjustedCentroid(
   region: Region,
-  vertices: Point[],
+  vertices: Vertex[],
   margin: number
-): { x: number, y: number } {
+): Point {
   const regionVertices = region.vertices
     .map(vertexId => vertices.find(v => v.id === vertexId))
-    .filter((vertex): vertex is Point => vertex !== undefined);
+    .filter((vertex): vertex is Vertex => vertex !== undefined);
 
   if (regionVertices.length === 0) {
     return { x: 0, y: 0 }; // Or some other default/error value
@@ -267,10 +251,10 @@ function findAdjustedCentroid(
 }
 
 
-const getCentroid = (region: Region, vertices: Point[]) => {
+const getCentroid = (region: Region, vertices: Vertex[]) => {
   const territoryVertices = region.vertices.map(
     vertexId => vertices.find(v => v.id === vertexId)
-  ).filter((vertex): vertex is Point => vertex !== undefined);
+  ).filter((vertex): vertex is Vertex => vertex !== undefined);
 
   let minX = Infinity;
   let minY = Infinity;
@@ -301,10 +285,10 @@ const defaultImage = {
 interface MapVisualizationProps {
   imageSrc?: string;
   regions: Region[];
-  vertices: Point[];
+  vertices: Vertex[];
   routes?: Region[];
   getRegionStyle?: (region: Region) => RegionStyle;
-  getVertexStyle?: (vertex: Point) => VertexStyle;
+  getVertexStyle?: (vertex: Vertex) => VertexStyle;
   showLabels?: boolean;
   customRenderFunctions?: ((ctx: CanvasRenderingContext2D) => void)[];
   onClick?: (event: MapMouseEvent) => void;
@@ -388,9 +372,9 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       if (region.vertices.length < 3) return;
       const regionStyle = getRegionStyle(region);
 
-      let points: Point[] = region.vertices
+      let points: Vertex[] = region.vertices
         .map(vertexId => vertices.find(v => v.id === vertexId))
-        .filter((vertex): vertex is Point => vertex !== undefined);
+        .filter((vertex): vertex is Vertex => vertex !== undefined);
       if (points.length < 3) return;
 
       ctx.beginPath();
@@ -412,9 +396,9 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
       if (region.vertices.length < 3) return;
       const regionStyle = getRegionStyle(region);
 
-      let points: Point[] = region.vertices
+      let points: Vertex[] = region.vertices
         .map(vertexId => vertices.find(v => v.id === vertexId))
-        .filter((vertex): vertex is Point => vertex !== undefined);
+        .filter((vertex): vertex is Vertex => vertex !== undefined);
       if (points.length < 3) return;
 
       ctx.beginPath();

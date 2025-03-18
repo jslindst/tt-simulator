@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import MapVisualization, { Point, Region, MapData, RegionStyle, VertexStyle, MapMouseEvent } from './MapVisualization';
+import MapVisualization, { Vertex, Region, MapData, RegionStyle, VertexStyle, MapMouseEvent } from './MapVisualization';
 
 type Mode = 'none' | 'add' | 'move' | 'delete' | 'create-region' | 'select-region' | 'split-edge'; // Added split-edge mode
 
@@ -7,7 +7,7 @@ type Mode = 'none' | 'add' | 'move' | 'delete' | 'create-region' | 'select-regio
 export const findRegionAtPoint = (data: MapData, x: number, y: number): Region | null => {
   for (let i = data.regions.length - 1; i >= 0; i--) {
     const region = data.regions[i];
-    let points: Point[] = region.vertices.map(vertexId => data.vertices.find(v => v.id === vertexId)).filter((vertex): vertex is Point => vertex !== undefined);
+    let points: Vertex[] = region.vertices.map(vertexId => data.vertices.find(v => v.id === vertexId)).filter((vertex): vertex is Vertex => vertex !== undefined);
     if (isPointInPolygon(x, y, points)) {
       return region;
     }
@@ -15,7 +15,7 @@ export const findRegionAtPoint = (data: MapData, x: number, y: number): Region |
   return null;
 };
 
-export const isPointInPolygon = (x: number, y: number, vertices: Point[]): boolean => {
+export const isPointInPolygon = (x: number, y: number, vertices: Vertex[]): boolean => {
   let isInside = false;
   for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
     const xi = vertices[i].x, yi = vertices[i].y;
@@ -30,7 +30,7 @@ export const isPointInPolygon = (x: number, y: number, vertices: Point[]): boole
 
 export const MapEditor: React.FC = () => {
   const [imageSrc] = useState<string>('TTmap2ndEd.jpg'); // YOUR IMAGE URL
-  const [vertices, setVertices] = useState<Point[]>([]);
+  const [vertices, setVertices] = useState<Vertex[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [mode, setMode] = useState<Mode>('add');
   const [selectedVertexId, setSelectedVertexId] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export const MapEditor: React.FC = () => {
     }
   }
 
-  function getVertexFillStyle(vertex: Point): VertexStyle {
+  function getVertexFillStyle(vertex: Vertex): VertexStyle {
     return {
       fillColor: vertex.id === selectedVertexId ? 'yellow' : vertex.id === highlightedVertexId ? (mode === 'delete' ? 'red' : 'cyan') : 'blue',
       drawColor: 'black'
@@ -69,9 +69,9 @@ export const MapEditor: React.FC = () => {
   const renderCurrentRegion = useCallback((ctx: CanvasRenderingContext2D) => {
     if (currentRegionVertices.length > 0) {
       ctx.beginPath();
-      let points: Point[] = currentRegionVertices
+      let points: Vertex[] = currentRegionVertices
         .map(vertexId => vertices.find(v => v.id === vertexId))
-        .filter((vertex): vertex is Point => vertex !== undefined);
+        .filter((vertex): vertex is Vertex => vertex !== undefined);
 
       if (points.length > 0) {
         ctx.moveTo(points[0].x, points[0].y);
@@ -90,7 +90,7 @@ export const MapEditor: React.FC = () => {
     const { x, y } = event;
 
     if (mode === 'add') {
-      const newVertex: Point = { x, y, id: generateVertexId() };
+      const newVertex: Vertex = { x, y, id: generateVertexId() };
       setVertices([...vertices, newVertex]);
     } else if (mode === 'move') {
       if (selectedVertexId === null) {
@@ -335,7 +335,7 @@ export const MapEditor: React.FC = () => {
 
     if (closestEdges.length > 0) {
       // 1. Create the new vertex
-      const newVertex: Point = { x, y, id: generateVertexId() };
+      const newVertex: Vertex = { x, y, id: generateVertexId() };
       setVertices([...vertices, newVertex]);
 
       // 2. Update *all* affected regions
