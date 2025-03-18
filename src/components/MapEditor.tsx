@@ -28,7 +28,7 @@ const isPointInPolygon = (x: number, y: number, vertices: Point[]): boolean => {
   return isInside;
 };
 
-const MapEditor: React.FC = () => {
+export const MapEditor: React.FC = () => {
   const [imageSrc] = useState<string>('TTmap2ndEd.jpg'); // YOUR IMAGE URL
   const [vertices, setVertices] = useState<Point[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
